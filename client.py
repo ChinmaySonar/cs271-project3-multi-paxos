@@ -32,7 +32,7 @@ def create_transactions():
         print("What type of transaction do you want to issue?\n\t1. Transfer\n\t2. Balance")
         option = int(input())
         if option == 1:
-            # update the clock for each transaction
+            # this option deals with input for new transaction
             print("Enter the Reciever ID: ")
             reciever = int(input())
             print("Enter the amount you wish to send: ")
