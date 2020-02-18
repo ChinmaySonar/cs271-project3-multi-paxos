@@ -3,7 +3,7 @@ import pickle
 import argparse
 import threading
 from termcolor import colored
-from linkedlist import Node, SyncMsg, calculateBalance
+from linkedlist import Node, calculateBalance
 
 # check for valid command line arguments
 parser = argparse.ArgumentParser(description='Blockchain Client')
