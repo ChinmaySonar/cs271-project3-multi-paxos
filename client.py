@@ -78,10 +78,8 @@ def listen_to_clients():
     while True:
         print(colored("(alert) Waiting for connections.", 'cyan'))
         conn, addr = client_listen.accept()
-        print(colored(f"(message) Sync message recieved.", 'yellow'))
-        update_thread = threading.Thread(name="Sync Message Thread", target=process_clients_sync, args=(conn, addr))
-        update_thread.start()
-        update_thread.join()
+        print(colored(f"(message) Some message recieved.", 'yellow'))
+        # TODO: finish this logic for paxos majority from leader here
     client_listen.close()
 
 
