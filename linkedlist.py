@@ -1,9 +1,3 @@
-# Timetable updates
-class SyncMsg:
-    def __init__(self, client_id, bchain_transactions=[]):
-        self.client_id = client_id
-        self.transactions = bchain_transactions
-
 # Node class to handle transactions
 class Node: 
 
