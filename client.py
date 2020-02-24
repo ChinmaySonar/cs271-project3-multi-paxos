@@ -3,7 +3,7 @@ import pickle
 import argparse
 import threading
 from termcolor import colored
-from linkedlist import Node, calculateBalance
+from linkedlist import Node, calculateBalance, printList
 
 # check for valid command line arguments
 parser = argparse.ArgumentParser(description='Blockchain Client')
@@ -22,6 +22,7 @@ CLIENTS.remove(PORT) #removing the current clients port
 # globals
 lock1       = threading.Lock()
 lock2       = threading.Lock()
+log         = []
 bchain      = []
 
 def create_transactions():
@@ -38,20 +39,29 @@ def create_transactions():
             print("Enter the amount you wish to send: ")
             amount = float(input())
             print(colored(f"(message) You {PORT} are sending {amount} to {reciever}.", 'yellow'))
-            if calculateBalance(bchain, INIT_BAL, PORT) >= amount:
+            if calculateBalance(bchain+log, INIT_BAL, PORT) >= amount:
                 transaction = Node(PORT, reciever, amount)
                 bchain.append(transaction)
                 print(colored("(response) SUCCESS", 'green'))
             else:
+                # TODO: add the paxos call and check balance again and then either continue or send INCORRECT
                 print(colored("(response) INCORRECT", 'red'))
         elif option == 2:
             # this should be simple since there is no need to check or make any request to other clients
             print(colored(f"(message) Checking balance for {PORT}.", 'yellow'))
-            balance = calculateBalance(bchain, INIT_BAL, PORT)
+            balance = calculateBalance(bchain+log, INIT_BAL, PORT)
             print(colored(f"(response) The balance is: ${balance}.", 'green'))
             for client in CLIENTS:
-                balance = calculateBalance(bchain, INIT_BAL, client)
+                balance = calculateBalance(bchain+log, INIT_BAL, client)
                 print(colored(f"(response) The estimated balance for {client} is: ${balance}.", 'green'))
+        elif option == 3:
+            # this option handles the printing of log
+            print(colored("Printing local log.", 'yellow'))
+            printList(log)
+        elif option == 4:
+            # this option handles the printing of bchain
+            print(colored("Printing commited blockchain.", 'yellow'))
+            printList(bchain)
         else:
             print(colored("Incorrect transaction type.", 'yellow'))
 

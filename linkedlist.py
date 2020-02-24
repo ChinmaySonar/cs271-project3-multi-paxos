@@ -1,3 +1,5 @@
+from termcolor import colored
+
 # Node class to handle transactions
 class Node: 
 
@@ -16,3 +18,14 @@ def calculateBalance(arr, INIT_BAL, PID):
         elif PID == item.reciever:
             final_bal += item.amount
     return final_bal
+
+# function to print whatever list is given
+def printList(list):
+    try:
+        if not list:
+            print(colored("List is empty.", 'yellow'))
+        else:
+            for item in range(len(list)):
+                print(colored(f"Sender: {item.sender}, Reciever: {item.reciever}, Amount: {item.amount}.", 'yellow'))
+    except:
+        print(colored("Error printing list.", 'yellow'))
