@@ -27,8 +27,10 @@ bchain      = []
 
 def create_transactions():
     global bchain
+    global log
+
+    
     while True:
-        print(bchain)
         print(colored(f"\n\n(alert) This client ID is {PORT}.", 'cyan'))
         print("What type of transaction do you want to issue?\n\t1. Transfer\n\t2. Balance")
         option = int(input())
@@ -41,7 +43,7 @@ def create_transactions():
             print(colored(f"(message) You {PORT} are sending {amount} to {reciever}.", 'yellow'))
             if calculateBalance(bchain+log, INIT_BAL, PORT) >= amount:
                 transaction = Node(PORT, reciever, amount)
-                bchain.append(transaction)
+                log.append(transaction)
                 print(colored("(response) SUCCESS", 'green'))
             else:
                 # TODO: add the paxos call and check balance again and then either continue or send INCORRECT
@@ -73,13 +75,13 @@ def send_to_clients(msg, client_id):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         # sending the sync message to client_id
+        # TODO: reply back to other clients during paxos run
         s.connect((HOSTNAME, client_id))
         s.send(msg)
         s.close()
     except:
         print(colored(f"(message) Client on port {client_id} is offline.", 'yellow'))
     
-
 
 def listen_to_clients():
     client_listen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -96,7 +98,7 @@ def listen_to_clients():
 if __name__ == '__main__':
     print(colored(f"(alert) Starting client with ID: {PORT}.", 'blue'))
     p = threading.Thread(name='Listen to Clients', target=listen_to_clients, args=())
-    p.daemon = True
+    p.daemon = True     # this does not need to be daemon here 
     p.start()
     create_transactions()
 
