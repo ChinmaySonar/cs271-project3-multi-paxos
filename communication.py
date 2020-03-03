@@ -45,7 +45,7 @@ def send_request_messages():
     replied_bal = ballot_num
     return    
 
-def get_logs():
+def get_logs(client_listen):
     global to_prop_logs
     global leader_race
     
@@ -220,13 +220,13 @@ def communication(child_conn, arguments):
                     # replied to higher ballot
                     msg = bytes('REPLY   0','utf-8')
                     send_to_client(msg, prop_ballot[1])
-                    print(colored(f"(debugging) Replied 0 to {prop_ballot[1]}; replied_ballot := {replied_ballot}.", 'blue'))
+                    print(colored(f"(debugging) Replied 0 to {prop_ballot[1]}; replied_ballot := {replied_bal}.", 'blue'))
                 else:  
                     # reply to proposed -- send log entries
                     replied_bal = prop_ballot
                     msg = bytes('REPLY   1','utf-8') + pickle.dumps(log)
                     send_to_client(msg, prop_ballot[1])
-                    print(colored(f"(debugging) Replied 1 to {prop_ballot[1]}; replied_ballot := {replied_ballot}.", 'blue'))
+                    print(colored(f"(debugging) Replied 1 to {prop_ballot[1]}; replied_ballot := {replied_bal}.", 'blue'))
             elif header == 'REPLY   ':
                 connection.close()
                     #'''if network_message[HEADERSIZE].decode() == '2': 
@@ -234,7 +234,7 @@ def communication(child_conn, arguments):
                     #    missing_entries = pickle.loads(network_message[HEADERSIZE+1:])
                     #    bchain += missing_entries'''
                         
-                if network_message[HEADERSIZE].decode() == '0':
+                if network_message[HEADERSIZE] == 0:
                     # detect competing leaders and receive for 10 sec
                     print(colored("(debugging) Received reply 0; setting leader_race = True", 'blue'))
                     leader_race = True
@@ -246,14 +246,14 @@ def communication(child_conn, arguments):
                     to_prop_logs = log
                     log_received = pickle.loads(network_message[HEADERSIZE+1:])
                     to_prop_logs += log_received
-                    for i in range(len(CLIENTS - 1)): # we already received one reply => -1
-                        get_logs()
+                    for i in range(len(CLIENTS)-1): # we already received one reply => -1
+                        get_logs(client_listen)
                     if not leader_race:
                         # selected as leader; move on to next phase
                         print(colored("(debugging) No leader_race; sending accept messages", 'blue'))
-                        msg = bytes('ACCEPT  ', 'utf-8') + pickle.dumps[ballot_num, to_prop_logs]                        
+                        msg = bytes('ACCEPT  ', 'utf-8') + pickle.dumps([ballot_num, to_prop_logs])                        
                         for client in CLIENTS:
-                            send_client_msg(msg, client)
+                            send_to_client(msg, client)
                     else:
                         print(colored("(debugging) detected leader race during reply phase", 'blue'))
                         continue # no need
@@ -263,13 +263,13 @@ def communication(child_conn, arguments):
                 # check ballot with replied ballot and take decision on acceptance
                 prop_ballot, to_prop_logs = pickle.loads(network_message[HEADERSIZE:])
                 # currently not using to prop logs; but can use if decided to get rid of commit phase
-                if prop_ballot == replied_ballot:
+                if prop_ballot == replied_bal:
                     # move forward with this accept
                     print(colored(f"(debugging) Received accept from chosen leader -- reply with accept 1 and length of my bchain: {len(bchain)}", 'blue'))
-                    msg = bytes('ACCEPTED 1 {}'.format(len(bchain)))
-                    send_client_message(msg, prop_ballot[1])
+                    msg = bytes(f"ACCEPTED 1 {len(bchain)}", 'utf-8')
+                    send_to_client(msg, prop_ballot[1])
              
-                elif replied_ballot == (0,0):
+                elif replied_bal == (0,0):
                     # came out of crash state (ignore the message --  can reply with 'ACCEPTED 0
                     print(colored("(debugging) received accept message just after recovering from crash", 'blue'))
                     continue # no need
@@ -278,12 +278,12 @@ def communication(child_conn, arguments):
                     # leader race, replied to someone else
                     print(colored("(debugging) got accept message from previous leader; informing about the new game in the town", 'blue'))
                     msg = bytes('ACCEPTED 0', 'utf-8')
-                    send_client_msg(msg, prop_ballot[1])
+                    send_to_client(msg, prop_ballot[1])
 
             elif header == 'ACCEPTED':
                 connection.close()
                 # only leader will get this (maybe we need to add in this phase later)
-                if network_message[HEADERSIZE+1].decode('utf-8') == '0':
+                if network_message[HEADERSIZE+1] == 0: # no idea what's going on here
                     # detect leader race
                     print(colored("(debugging) detected leader race during accept phase", 'blue'))
                     leader_race = True
@@ -291,7 +291,7 @@ def communication(child_conn, arguments):
                     continue
                 else:
                     # received 1 accept -- move on to commit phase
-                    accepted_index = int(network_message[HEADERSIZE+3].decode('utf-8'))
+                    accepted_index = int(network_message[HEADERSIZE+3])
                     if accepted_index <= len(bchain):
                     # bchain entry already committed
                         print(colored("(debugging) another accepted for same entry; ingore thos accepted", 'blue'))
@@ -309,8 +309,8 @@ def communication(child_conn, arguments):
                         set_to_default()
                         replied_bal = (0, 0)
                     print(colored("(debugging) checking pending transaction status", 'blue'))
-                    pending_trans_status = pending_trans_status()
-                    if not pending_trans_status:
+                    pend_trans_status = pending_trans_status()
+                    if not pend_trans_status:
                         # don't have enough balance; send failed transaction message
                         print(colored("(debugging) client transaction failed, not enough balance :(", 'blue'))
                         pending_trans = None
@@ -337,10 +337,10 @@ def communication(child_conn, arguments):
                 set_to_default()
                 replied_bal = (0, 0)
                 # check transaction status if any pending and append it to the log
-                if pendind_trans != None:
+                if pending_trans != None:
                     print(colored("(debugging) have some pending transaction from client; checking status", 'blue'))
-                    pending_trans_status = pending_trans_status()
-                if not pending_trans_status:
+                    pend_trans_status = pending_trans_status()
+                if not pend_trans_status:
                     # do paxos run with this process as a leader
                     print(colored("(debugging) pending transaction not resolved; initiating own run of paxos", 'blue'))
                     continue
