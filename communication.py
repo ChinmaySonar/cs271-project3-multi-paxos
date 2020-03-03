@@ -87,6 +87,8 @@ def pending_trans_status():
     global pending_trans
     global bchain
     global PORT
+    if pending_trans is None:
+        return True
     receiver = pending_trans[0]
     amount = pending_trans[1]
     all_trans = all_transactions(bchain)
@@ -318,7 +320,7 @@ def communication(child_conn, arguments):
                         replied_bal = (0, 0)
                     print(colored("(debugging) checking pending transaction status", 'blue'))
                     pend_trans_status = pending_trans_status()
-                    pend_trans_status = False
+                    #pend_trans_status = False
                     if not pend_trans_status:
                         # don't have enough balance; send failed transaction message
                         print(colored("(debugging) client transaction failed, not enough balance :(", 'blue'))
@@ -326,12 +328,16 @@ def communication(child_conn, arguments):
                         child_conn.send('0')
                     else:
                         # push pending trans to log and send reply to client (can make function for this)
-                        print(colored("(debugging) client transaction suceeded, pushing to logs", 'blue'))                        
-                        receiver = pending_trans[0]
-                        amount = pending_trans[1]
-                        transaction = Node(PORT, receiver, amount)
-                        log.append(transaction)
-                        child_conn.send('1')
+                        print(colored("(debugging) client transaction suceeded, pushing to logs", 'blue'))  
+                        if pending_trans == None:
+                            continue
+                        else:                      
+                            receiver = pending_trans[0]
+                            amount = pending_trans[1]
+                            transaction = Node(PORT, receiver, amount)
+                            log.append(transaction)
+                            child_conn.send('1')
+                            pending_trans = None
                 
             elif header == 'COMMIT': 
                 connection.close()
@@ -346,22 +352,22 @@ def communication(child_conn, arguments):
                 replied_bal = (0, 0)
                 # check transaction status if any pending and append it to the log
                 # pend_trans_status = False
-                pend_trans_status = pending_trans_status()
-                if pending_trans != None:
-                    print(colored("(debugging) have some pending transaction from client; checking status", 'blue'))
-                    pend_trans_status = pending_trans_status()
-                if not pend_trans_status:
-                    # do paxos run with this process as a leader
-                    print(colored("(debugging) pending transaction not resolved; initiating own run of paxos", 'blue'))
-                    continue
-                else:
-                    # push pending trans to log and send reply to client
-                    print(colored("(debugging) pending transaction resolved due to someone else's paxos run", 'blue'))
-                    pending_trans = None
-                    receiver = pending_trans[0]
-                    amount = pending_trans[1]
-                    transaction = Node(PORT, receiver, amount)
-                    log.append(transaction)
-                    child_conn.send('1')
+                # pend_trans_status = pending_trans_status()
+                # if pending_trans != None:
+                 #   print(colored("(debugging) have some pending transaction from client; checking status", 'blue'))
+                 #   pend_trans_status = pending_trans_status()
+                #if not pend_trans_status:
+                #    # do paxos run with this process as a leader
+                #    print(colored("(debugging) pending transaction not resolved; initiating own run of paxos", 'blue'))
+                #    continue
+                #if True:
+                #    # push pending trans to log and send reply to client
+                #    print(colored("(debugging) pending transaction resolved due to someone else's paxos run", 'blue'))
+                #    pending_trans = None
+                #    receiver = pending_trans[0]
+                #    amount = pending_trans[1]
+                #    transaction = Node(PORT, receiver, amount)
+                #    log.append(transaction)
+                #    child_conn.send('1')
                     
                     
