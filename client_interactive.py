@@ -99,19 +99,19 @@ def create_transaction(parent_conn):
             print(colored("(response) Incorrect transaction type.", 'red'))
 
 
-# parent and child process
-parent_conn, child_conn = Pipe()
+if __name__ == "__main__":
+    # parent and child process
+    parent_conn, child_conn = Pipe()
 
-arguments = [PORT, CLIENTS, CLIENT_ID]
-network_communication = Process(target = communication, args=(child_conn, arguments,))
-network_communication.start()
+    arguments = [PORT, CLIENTS, CLIENT_ID]
+    network_communication = Process(name='Network Communication', target = communication, args=(child_conn, arguments,))
+    network_communication.start()
 
-# to play catch-up
-print(colored("(message) Catching-up with other clients (10 sec sleep).",'yellow'))
-sleep(3) 
+    # to play catch-up
+    print(colored("(message) Catching-up with other clients (10 sec sleep).",'yellow'))
+    sleep(3) 
 
-create_transaction(parent_conn)
+    create_transaction(parent_conn)
 
-# check if we can do this given we want to handle failures..
-network_communication.join()
-
+    # check if we can do this given we want to handle failures..
+    network_communication.join()
