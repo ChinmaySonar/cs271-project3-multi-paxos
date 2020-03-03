@@ -33,6 +33,7 @@ def get_response(parent_conn):
         else:
             continue
 
+
 def print_log(logs):
     i = 1
     for transaction in logs:
@@ -42,6 +43,7 @@ def print_log(logs):
         print(colored(f"Amount: {transaction.amount}", 'yellow'))
         print("")
         i += 1
+
 
 # main function seeking client requests
 def create_transaction(parent_conn):

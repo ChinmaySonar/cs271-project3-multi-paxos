@@ -16,6 +16,7 @@ class Node:
         self.receiver = receiver
         self.amount = amount
 
+
 # function to calculate balance given a PID
 def calculateBalance(arr, INIT_BAL, PID):
     final_bal = INIT_BAL
@@ -25,6 +26,7 @@ def calculateBalance(arr, INIT_BAL, PID):
         elif PID == item.receiver:
             final_bal += item.amount
     return final_bal
+
 
 # function to print whatever list is given
 def printList(list):
@@ -38,7 +40,6 @@ def printList(list):
         print(colored("Error printing list.", 'yellow'))
 
 
-
 # each entry in blockchain is list of nodes
 # bc_entry is a list of nodes
 class BC_entry:
@@ -49,7 +50,6 @@ class BC_entry:
 
 
 ## helper functions
-
 # returns all transaction in bchain + log as a list
 def all_transactions(bchain, log=[]):
     all_trans = []
@@ -84,6 +84,7 @@ def send_catch_up(msg, client):
     except:
         print(colored(f"(message) Client on port {client} is offline.", 'yellow'))
         return ''
+
 
 # send message msg to client
 def send_to_client(msg, client):
