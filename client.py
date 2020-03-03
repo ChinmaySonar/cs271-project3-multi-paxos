@@ -5,7 +5,7 @@ import threading
 from multiprocessing import Process, Pipe
 from time import sleep
 from termcolor import colored
-from linkedlist_and_helpers import *
+from helpers import *
 from communication import *
 import os
 
