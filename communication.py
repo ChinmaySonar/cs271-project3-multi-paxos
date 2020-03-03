@@ -130,7 +130,7 @@ def communication(child_conn, arguments):
     
     # play catch-up (can make separate function to do this)
     print(colored("(message) Catching-up with others in the network", 'yellow'))
-    msg = bytes("CATCH-UP", 'utf-8')
+    msg = bytes(f"{'CATCH-UP':<{HEADERSIZE}}", 'utf-8')
     for client in CLIENTS:
         bchain_recvd = send_catch_up(msg, client)
         if bchain_recvd == '': # crashed client
