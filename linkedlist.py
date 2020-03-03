@@ -9,10 +9,33 @@ class Node:
         self.reciever = reciever
         self.amount = amount
 
+class BlockChainNode:
+
+    def __init__(self, index, log):
+        self.index = index
+        self.log = log
+
+class PaxosMessage:
+
+    def __init__(self, index, ballot_num, accept_val=[], log=[]):
+        self.index = index
+        self.ballot_num = ballot_num
+        self.accept_val = accept_val
+        self.log = log  # this is value that we are proposing
+
+
 # function to calculate balance given a PID
-def calculateBalance(arr, INIT_BAL, PID):
+def calculateBalance(bchain, log, INIT_BAL, PID):
     final_bal = INIT_BAL
-    for item in arr:
+    # check for transactions in each bchain entry
+    for entry in bchain:
+        for item in entry:
+            if PID == item.sender:
+                final_bal -= item.amount
+            elif PID == item.reciever:
+                final_bal += item.amount
+    # check for transactions in local log
+    for item in log:
         if PID == item.sender:
             final_bal -= item.amount
         elif PID == item.reciever:
