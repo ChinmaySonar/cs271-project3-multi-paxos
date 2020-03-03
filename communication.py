@@ -6,7 +6,7 @@ from linkedlist_and_helpers import*
 
 
 # globals
-HOSTNAME       = socket.gethostname()
+HOSTNAME       = 'localhost'
 HEADERSIZE     = 8
 INIT_BAL       = 10
 log            = []
@@ -17,16 +17,16 @@ CLIENTS        = None
 PORT           = None
 
 # paxos globals
-index           = 0               # (should always be number committed entries in my blockchain -- will be initialized at zero
-ballot_num      = None            # (useful for election and accepting a value) -- initialized at None, updated while sending request message and after receiving request message
+index         = 0               # (should always be number committed entries in my blockchain -- will be initialized at zero
+ballot_num    = None            # (useful for election and accepting a value) -- initialized at None, updated while sending request message and after receiving request message
 #accept_num    =                # (index of last accepted blockchain object) -- may not be necessary at all
 #accept_val    =                # (last accepted blockchain object -- mostly not necessary) -- again, may not be necessary
 #state         =                 # (leader or not) 
 #replies       =                 # (replies to check majority in any phase of paxos)
-leader_race     = False           # (true if we detect race; then we sleep for random time)
-pending_trans   = None            # (used in competing leader situation when received client request but somebody else is leader for this paxos run)
-replied         = False           # (Flag to check if replied to someone or not)
-to_prop_logs    = []              # used only when chosen as leader -- safety variable in case of leader race
+leader_race   = False           # (true if we detect race; then we sleep for random time)
+pending_trans = None            # (used in competing leader situation when received client request but somebody else is leader for this paxos run)
+replied       = False           # (Flag to check if replied to someone or not)
+to_prop_logs  = []              # used only when chosen as leader -- safety variable in case of leader race
 
 
 # helper functions (first 4)
@@ -73,14 +73,16 @@ def get_logs(client_listen):
             to_prop_logs += received_logs
 
 def set_to_default():
-    global log
+    #global log
     global leader_race
     global replied
     global ballot_num
-    log = []
+    global to_prop_logs
+    #log = []
     leader_race = False
     replied = False 
     ballot_num = (0, CLIENT_ID)
+    to_prop_logs = []
     print(colored("(debugging) setting values to default at the end of paxos run", 'blue'))
 
 def pending_trans_status():
@@ -103,7 +105,6 @@ def communication(child_conn, arguments):
     global HOSTNAME
     global HEADERSIZE
     global INIT_BAL
-    # global ID
     global log
     global bchain
     global RECV_LENGTH
@@ -277,6 +278,13 @@ def communication(child_conn, arguments):
                     print(colored(f"(debugging) Received accept from chosen leader -- reply with accept 1 and length of my bchain: {len(bchain)}", 'blue'))
                     msg = bytes(f"{'ACCEPTED':<{HEADERSIZE}}", 'utf-8') + (1).to_bytes(1, 'little') + bytes(str(len(bchain)), "utf-8")
                     send_to_client(msg, prop_ballot[1])
+                    # updating logs for non-leader
+                    for i in range(len(to_prop_logs)):
+                        for j in range(len(log)):
+                            if to_prop_logs[i] == log[j]:
+                                log.pop(j)
+                                i += 1
+                                break
              
                 elif replied_bal == (0,0):
                     # came out of crash state (ignore the message --  can reply with 'ACCEPTED 0
@@ -304,7 +312,7 @@ def communication(child_conn, arguments):
                     accepted_index = int(network_message[HEADERSIZE+1])
                     if accepted_index <= len(bchain):
                     # bchain entry already committed
-                        print(colored("(debugging) another accepted for same entry; ingore thos accepted", 'blue'))
+                        print(colored("(debugging) another accepted for same entry; ingore this accepted", 'blue'))
                         continue
 
                     else:
@@ -317,27 +325,28 @@ def communication(child_conn, arguments):
                             send_to_client(msg, client)
                         # take care of all other variables which should be set to default
                         set_to_default()
+                        log = []
                         replied_bal = (0, 0)
-                    print(colored("(debugging) checking pending transaction status", 'blue'))
-                    pend_trans_status = pending_trans_status()
-                    #pend_trans_status = False
-                    if not pend_trans_status:
+                        print(colored("(debugging) checking pending transaction status", 'blue'))
+                        pend_trans_status = pending_trans_status()
+                        #pend_trans_status = False
+                        if not pend_trans_status:
                         # don't have enough balance; send failed transaction message
-                        print(colored("(debugging) client transaction failed, not enough balance :(", 'blue'))
-                        pending_trans = None
-                        child_conn.send('0')
-                    else:
-                        # push pending trans to log and send reply to client (can make function for this)
-                        print(colored("(debugging) client transaction suceeded, pushing to logs", 'blue'))  
-                        if pending_trans == None:
-                            continue
-                        else:                      
-                            receiver = pending_trans[0]
-                            amount = pending_trans[1]
-                            transaction = Node(PORT, receiver, amount)
-                            log.append(transaction)
-                            child_conn.send('1')
+                            print(colored("(debugging) client transaction failed, not enough balance :(", 'blue'))
                             pending_trans = None
+                            child_conn.send('0')
+                        else:
+                            # push pending trans to log and send reply to client (can make function for this)  
+                            if pending_trans == None:
+                                continue
+                            else:     
+                                print(colored("(debugging) client transaction suceeded, pushing to logs", 'blue'))                 
+                                receiver = pending_trans[0]
+                                amount = pending_trans[1]
+                                transaction = Node(PORT, receiver, amount)
+                                log.append(transaction)
+                                child_conn.send('1')
+                                pending_trans = None
                 
             elif header == 'COMMIT': 
                 connection.close()
