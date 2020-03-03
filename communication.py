@@ -157,6 +157,7 @@ def communication(child_conn, arguments):
                 client_listen.settimeout(1)
                 client_listen.listen(1)
                 connection, client_address = client_listen.accept()
+                
         except socket.timeout:
             #did not hear anything on the network 
             # pass
@@ -201,8 +202,8 @@ def communication(child_conn, arguments):
                         pending_trans = [receiver, amount]
                         # send request messages to everyone on the network -- send ballot -- <num, pid>, index = len(bc+1) -- bc is one indexed
                         send_request_messages()
-
             continue
+
         else:
             # received some message on the network
             # (may need to put all of this in try, finally thing)
