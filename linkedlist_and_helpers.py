@@ -51,7 +51,7 @@ class BC_entry:
 ## helper functions
 
 # returns all transaction in bchain + log as a list
-def all_transactions(bchain, log):
+def all_transactions(bchain, log=[]):
     all_trans = []
     for i in bchain:
         all_trans += i.entry
@@ -95,4 +95,3 @@ def send_to_client(msg, client):
         s.close()
     except:
         print(colored(f"(message) Client on port {client} is offline.", 'yellow'))
-    return

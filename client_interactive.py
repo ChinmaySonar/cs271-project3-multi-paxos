@@ -7,7 +7,7 @@ from time import sleep
 from termcolor import colored
 from linkedlist_and_helpers import *
 from communication import *
-
+import os
 
 
 # check for valid command line arguments
@@ -47,7 +47,7 @@ def print_log(logs):
 def create_transaction(parent_conn):
         
     while True:
-        print(colored(f"\n\n(alert) This client ID is {PORT}.", 'cyan'))
+        print(colored(f"\n\n(alert) This client ID is {PORT}. Client PID is {os.getpid()}.", 'cyan'))
         print("What type of transaction do you want to issue?\n\t1. Transfer\n\t2. Balance\n\t3. Print Log\n\t4. Print Blockchain")
         option = int(input())
         if option == 1:
@@ -92,7 +92,7 @@ def create_transaction(parent_conn):
             bchain = pickle.loads(response)
             j = 0
             for entry in bchain:
-                print(colored(f"Index in blockchain: {j}", 'black'))            
+                print(colored(f"Index in blockchain: {j}", 'yellow'))            
                 print_log(entry.entry)
                 j += 1
         else:
@@ -108,7 +108,7 @@ network_communication.start()
 
 # to play catch-up
 print(colored("(message) Catching-up with other clients (10 sec sleep).",'yellow'))
-sleep(10) 
+sleep(3) 
 
 create_transaction(parent_conn)
 
