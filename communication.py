@@ -19,10 +19,6 @@ PORT           = None
 # paxos globals
 index         = 0               # (should always be number committed entries in my blockchain -- will be initialized at zero
 ballot_num    = None            # (useful for election and accepting a value) -- initialized at None, updated while sending request message and after receiving request message
-#accept_num    =                # (index of last accepted blockchain object) -- may not be necessary at all
-#accept_val    =                # (last accepted blockchain object -- mostly not necessary) -- again, may not be necessary
-#state         =                 # (leader or not) 
-#replies       =                 # (replies to check majority in any phase of paxos)
 leader_race   = False           # (true if we detect race; then we sleep for random time)
 pending_trans = None            # (used in competing leader situation when received client request but somebody else is leader for this paxos run)
 replied       = False           # (Flag to check if replied to someone or not)
@@ -157,7 +153,7 @@ def communication(child_conn, arguments):
                 client_listen.settimeout(1)
                 client_listen.listen(1)
                 connection, client_address = client_listen.accept()
-                
+
         except socket.timeout:
             #did not hear anything on the network 
             # pass
