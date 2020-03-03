@@ -90,11 +90,13 @@ def pending_trans_status():
     global bchain
     global PORT
     if pending_trans is None:
+        print(colored("(debugging) Did not have pending transaction", 'red'))
         return True
     receiver = pending_trans[0]
     amount = pending_trans[1]
     all_trans = all_transactions(bchain)
     if calculateBalance(all_trans, INIT_BAL, PORT) >= amount:
+        print(colored("(debugging) Had pending transaction and enough balance", 'red'))
         return True
     return False
 
@@ -131,7 +133,7 @@ def communication(child_conn, arguments):
     
     # play catch-up (can make separate function to do this)
     print(colored("(message) Catching-up with others in the network", 'yellow'))
-    msg = bytes(f"{'CATCH-UP':<{HEADERSIZE}}", 'utf-8')
+    msg = bytes("CATCH-UP", 'utf-8')
     for client in CLIENTS:
         bchain_recvd = send_catch_up(msg, client)
         if bchain_recvd == '': # crashed client
@@ -278,13 +280,9 @@ def communication(child_conn, arguments):
                     print(colored(f"(debugging) Received accept from chosen leader -- reply with accept 1 and length of my bchain: {len(bchain)}", 'blue'))
                     msg = bytes(f"{'ACCEPTED':<{HEADERSIZE}}", 'utf-8') + (1).to_bytes(1, 'little') + bytes(str(len(bchain)), "utf-8")
                     send_to_client(msg, prop_ballot[1])
+                    log = []
                     # updating logs for non-leader
-                    for i in range(len(to_prop_logs)):
-                        for j in range(len(log)):
-                            if to_prop_logs[i] == log[j]:
-                                log.pop(j)
-                                i += 1
-                                break
+                    
              
                 elif replied_bal == (0,0):
                     # came out of crash state (ignore the message --  can reply with 'ACCEPTED 0
@@ -309,8 +307,9 @@ def communication(child_conn, arguments):
                     continue
                 else:
                     # received 1 accept -- move on to commit phase
-                    accepted_index = int(network_message[HEADERSIZE+1])
-                    if accepted_index <= len(bchain):
+                    accepted_index = int(network_message[HEADERSIZE+1:])
+                    print(colored(f"(debugging) Accepted_index: {accepted_index}",'red'))
+                    if accepted_index < len(bchain):
                     # bchain entry already committed
                         print(colored("(debugging) another accepted for same entry; ingore this accepted", 'blue'))
                         continue
@@ -330,7 +329,7 @@ def communication(child_conn, arguments):
                         print(colored("(debugging) checking pending transaction status", 'blue'))
                         pend_trans_status = pending_trans_status()
                         #pend_trans_status = False
-                        if not pend_trans_status:
+                        if pend_trans_status == False:
                         # don't have enough balance; send failed transaction message
                             print(colored("(debugging) client transaction failed, not enough balance :(", 'blue'))
                             pending_trans = None
@@ -338,6 +337,7 @@ def communication(child_conn, arguments):
                         else:
                             # push pending trans to log and send reply to client (can make function for this)  
                             if pending_trans == None:
+                                print(colored("Was pending transaction; still came here"))
                                 continue
                             else:     
                                 print(colored("(debugging) client transaction suceeded, pushing to logs", 'blue'))                 
