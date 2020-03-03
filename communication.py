@@ -133,7 +133,7 @@ def communication(child_conn, arguments):
     
     # play catch-up (can make separate function to do this)
     print(colored("(message) Catching-up with others in the network", 'yellow'))
-    msg = bytes("CATCH-UP", 'utf-8')
+    msg = bytes(f"{'CATCH-UP':<{HEADERSIZE}}", 'utf-8')
     for client in CLIENTS:
         bchain_recvd = send_catch_up(msg, client)
         if bchain_recvd == '': # crashed client
@@ -234,7 +234,7 @@ def communication(child_conn, arguments):
                 else:  
                     # reply to proposed -- send log entries
                     replied_bal = prop_ballot
-                    print(colored(f"Sending reply: " + f"{'REPLY':<{HEADERSIZE}}" + "0", 'red'))
+                    print(colored(f"(debugging) Sending reply: " + f"{'REPLY':<{HEADERSIZE}}" + "0", 'red'))
                     msg = bytes(f"{'REPLY':<{HEADERSIZE}}",'utf-8') + (1).to_bytes(1, 'little') + pickle.dumps(log)
                     send_to_client(msg, prop_ballot[1])
                     print(colored(f"(debugging) Replied 1 to {prop_ballot[1]}; replied_ballot := {replied_bal}.", 'blue'))
@@ -298,7 +298,7 @@ def communication(child_conn, arguments):
             elif header == 'ACCEPTED':
                 connection.close()
                 # only leader will get this (maybe we need to add in this phase later)
-                print(colored(f"Recieved accpted msg: {network_message[HEADERSIZE:]}", 'red'))
+                print(colored(f"(debugging) Recieved accpted msg: {network_message[HEADERSIZE:]}", 'red'))
                 if network_message[HEADERSIZE:] == 0: # no idea what's going on here
                     # detect leader race
                     print(colored("(debugging) detected leader race during accept phase", 'blue'))
@@ -337,7 +337,7 @@ def communication(child_conn, arguments):
                         else:
                             # push pending trans to log and send reply to client (can make function for this)  
                             if pending_trans == None:
-                                print(colored("Was pending transaction; still came here"))
+                                print(colored("(debugging) Was pending transaction; still came here", 'blue'))
                                 continue
                             else:     
                                 print(colored("(debugging) client transaction suceeded, pushing to logs", 'blue'))                 
@@ -359,24 +359,4 @@ def communication(child_conn, arguments):
                 # take care of variables which needs to be set to default
                 set_to_default()
                 replied_bal = (0, 0)
-                # check transaction status if any pending and append it to the log
-                # pend_trans_status = False
-                # pend_trans_status = pending_trans_status()
-                # if pending_trans != None:
-                 #   print(colored("(debugging) have some pending transaction from client; checking status", 'blue'))
-                 #   pend_trans_status = pending_trans_status()
-                #if not pend_trans_status:
-                #    # do paxos run with this process as a leader
-                #    print(colored("(debugging) pending transaction not resolved; initiating own run of paxos", 'blue'))
-                #    continue
-                #if True:
-                #    # push pending trans to log and send reply to client
-                #    print(colored("(debugging) pending transaction resolved due to someone else's paxos run", 'blue'))
-                #    pending_trans = None
-                #    receiver = pending_trans[0]
-                #    amount = pending_trans[1]
-                #    transaction = Node(PORT, receiver, amount)
-                #    log.append(transaction)
-                #    child_conn.send('1')
-                    
                     

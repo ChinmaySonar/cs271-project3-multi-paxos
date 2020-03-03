@@ -54,17 +54,20 @@ def create_transaction(parent_conn):
             # this option deals with input for new transaction
             print("Enter the Reciever ID: ")
             receiver = int(input())
-            print("Enter the amount you wish to send: ")
-            amount = int(input()) # for now we can only send integer money
-            print(colored(f"(message) You {PORT} are sending {amount} to {receiver}.", 'yellow'))
-            
-            request = '1' + " " + str(receiver) + " " + str(amount)
-            parent_conn.send(request)
-            response = get_response(parent_conn)
-            if response[0] == '1':
-                print(colored("(response) SUCCESS", 'green'))
+            if receiver in CLIENTS:
+                print("Enter the amount you wish to send: ")
+                amount = int(input()) # for now we can only send integer money
+                print(colored(f"(message) You {PORT} are sending {amount} to {receiver}.", 'yellow'))
+                request = '1' + " " + str(receiver) + " " + str(amount)
+                parent_conn.send(request)
+                response = get_response(parent_conn)
+                if response[0] == '1':
+                    print(colored("(response) SUCCESS", 'green'))
+                else:
+                    print(colored("(response) INCORRECT", 'red'))
             else:
-                print(colored("(response) INCORRECT", 'red'))
+                print(colored(f"(message) Client {receiver} is not a valid.", "yellow"))
+                
             
         elif option == 2:
             # prints estimated balance from local bchain+log for each client
@@ -75,18 +78,24 @@ def create_transaction(parent_conn):
             response = pickle.loads(response)
             for client in response:
                 print(colored(f"(response) Balance for port {client[1]} is {client[0]}.",'yellow'))
+
+
         elif option == 3:
             # this option handles the printing of log
             print(colored("(message) Printing local log.", 'yellow'))
+            print(colored("(message) -----------------------------", 'yellow'))
             parent_conn.send('3')
             response = get_response(parent_conn)
             log = pickle.loads(response)
             print(f"(debugging) {log}")
             print_log(log)
+            print(colored("(message) -----------------------------", 'yellow'))
     
+
         elif option == 4:
             # this option handles the printing of bchain
             print(colored("(message) Printing commited blockchain.", 'yellow'))
+            print(colored("(message) -----------------------------", 'yellow'))
             parent_conn.send('4')
             response = get_response(parent_conn)
             bchain = pickle.loads(response)
@@ -95,23 +104,27 @@ def create_transaction(parent_conn):
                 print(colored(f"Index in blockchain: {j}", 'yellow'))            
                 print_log(entry.entry)
                 j += 1
+            print(colored("(message) -----------------------------", 'yellow'))
+
+
         else:
             print(colored("(response) Incorrect transaction type.", 'red'))
 
 
-# parent and child process
-parent_conn, child_conn = Pipe()
+if __name__ == '__main__':
+    # parent and child process
+    parent_conn, child_conn = Pipe()
 
-arguments = [PORT, CLIENTS, CLIENT_ID]
-network_communication = Process(target = communication, args=(child_conn, arguments,))
-network_communication.start()
+    arguments = [PORT, CLIENTS, CLIENT_ID]
+    network_communication = Process(target = communication, args=(child_conn, arguments,))
+    network_communication.start()
 
-# to play catch-up
-print(colored("(message) Catching-up with other clients (10 sec sleep).",'yellow'))
-sleep(3) 
+    # to play catch-up
+    print(colored("(message) Catching-up with other clients (10 sec sleep).",'yellow'))
+    sleep(3) 
 
-create_transaction(parent_conn)
+    create_transaction(parent_conn)
 
-# check if we can do this given we want to handle failures..
-network_communication.join()
+    # check if we can do this given we want to handle failures..
+    network_communication.join()
 
