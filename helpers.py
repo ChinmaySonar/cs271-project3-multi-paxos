@@ -98,6 +98,8 @@ def send_to_client(msg, client):
     except:
         print(colored(f"(message) Client on port {client} is offline.", 'yellow'))
 
+# print function to control printing debugging messages
+# the msg should always have prefix "(debugging) *"
 def dprint(debug=False, msg=""):
     if not debug:
         _original_stdout = sys.stdout
