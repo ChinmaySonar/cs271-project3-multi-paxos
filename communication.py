@@ -15,6 +15,7 @@ RECV_LENGTH    = 2000
 CLIENT_ID      = None
 CLIENTS        = None
 PORT           = None
+DEBUG          = False
 
 # paxos globals
 index         = 0               # (should always be number committed entries in my blockchain -- will be initialized at zero
@@ -54,17 +55,17 @@ def get_logs(client_listen):
         pass
         return
     else:
-        print(colored("(debugging) logs received from 2", 'blue'))
+        dprint(DEBUG, "(debugging) logs received from 2")
         network_message = connection.recv(RECV_LENGTH)
         connection.close()
         if network_message[HEADERSIZE] == 0:
             # detect competing leaders and receive for 10 sec
-            print(colored("(debugging) detected leader race during reply phase", 'blue'))
+            dprint(DEBUG, "(debugging) detected leader race during reply phase")
             leader_race = True
             to_prop_logs = []
             return
         else:
-            print(colored("(debugging) logs appended to to_prop_logs", 'blue'))
+            dprint(DEBUG, "(debugging) logs appended to to_prop_logs")
             received_logs = pickle.loads(network_message[HEADERSIZE+1:])
             to_prop_logs += received_logs
 
@@ -74,25 +75,29 @@ def set_to_default():
     global replied
     global ballot_num
     global to_prop_logs
+    global DEBUG
+
     #log = []
     leader_race = False
     replied = False 
     ballot_num = (0, CLIENT_ID)
     to_prop_logs = []
-    print(colored("(debugging) setting values to default at the end of paxos run", 'blue'))
+    dprint(DEBUG, "(debugging) setting values to default at the end of paxos run")
 
 def pending_trans_status():
     global pending_trans
     global bchain
     global PORT
+    global DEBUG
+
     if pending_trans is None:
-        print(colored("(debugging) Did not have pending transaction", 'red'))
+        dprint(DEBUG, "(debugging) Did not have pending transaction")
         return True
     receiver = pending_trans[0]
     amount = pending_trans[1]
     all_trans = all_transactions(bchain)
     if calculateBalance(all_trans, INIT_BAL, PORT) >= amount:
-        print(colored("(debugging) Had pending transaction and enough balance", 'red'))
+        dprint(DEBUG, "(debugging) Had pending transaction and enough balance")
         return True
     return False
 
@@ -115,10 +120,14 @@ def communication(child_conn, arguments):
     global CLIENT_ID
     global CLIENTS
     global PORT
+    global DEBUG
 
     PORT = arguments[0]
     CLIENTS = arguments[1]
     CLIENT_ID = arguments[2]
+    DEBUG = arguments[3]
+    print(colored(f"(message) Recieved debug as {arguments[3]}, Debug is set to {DEBUG}", 'yellow'))
+    
     ballot_num = (0, CLIENT_ID)
     replied_bal = (0,0)
 
@@ -144,12 +153,12 @@ def communication(child_conn, arguments):
     while True:
         try:
             if replied or leader_race:
-                print(colored("(debugging) Waiting to hear on network -- replied or leader race", 'blue'))
+                dprint(DEBUG, "(debugging) Waiting to hear on network -- replied or leader race")
                 client_listen.settimeout(10)
                 client_listen.listen(1)
                 connection, client_addess = client_listen.accept()
             else:
-                #print(colored("(debugging) Normal listening case", 'blue'))
+                #dprint(DEBUG, "(debugging) Normal listening case")
                 client_listen.settimeout(1)
                 client_listen.listen(1)
                 connection, client_address = client_listen.accept()
@@ -160,28 +169,28 @@ def communication(child_conn, arguments):
             replied = False          #kind of risky but believing in 10 secs now
             leader_race = False      # fine
             if pending_trans != None:
-                print(colored("(debugging) Have a pending trans from client -- initiating paxos", 'blue'))
+                dprint(DEBUG, "(debugging) Have a pending trans from client -- initiating paxos")
                 send_request_messages()
             elif child_conn.poll():
                 request = child_conn.recv()
                 if request[0] == '2': # balance
-                    print(colored("(debugging) Received balance request from client", 'blue'))
+                    dprint(DEBUG, "(debugging) Received balance request from client")
                     balances = balance(PORT, CLIENTS, bchain, log)
                     child_conn.send(pickle.dumps(balances))
-                    print(colored("(debugging) Sent balances to parent", 'blue'))
+                    dprint(DEBUG, "(debugging) Sent balances to parent")
                 
                 elif request[0] == '3': # print log
-                    print(colored("(debugging) Received print log request",'blue'))
+                    dprint(DEBUG, "(debugging) Received print log request")
                     child_conn.send(pickle.dumps(log))
-                    print(colored("(debugging) Sent logs to parent", 'blue'))
+                    dprint(DEBUG, "(debugging) Sent logs to parent")
 
                 elif request[0] == '4': # print Blockchain
-                    print(colored("(debugging) Received print bchain request", 'blue'))
+                    dprint(DEBUG, "(debugging) Received print bchain request")
                     child_conn.send(pickle.dumps(bchain))
-                    print(colored("(debugging) Sent bchain to parent", 'blue'))
+                    dprint(DEBUG, "(debugging) Sent bchain to parent")
 
                 elif request[0] == '1': # transfer
-                    print(colored("(debuggin) Received transfer request from client", 'blue'))
+                    dprint(DEBUG, "(debugging) Received transfer request from client")
                     list_request = list(map(int, request.strip().split()))
                     receiver = list_request[1]
                     amount = list_request[2]
@@ -190,11 +199,11 @@ def communication(child_conn, arguments):
                         transaction = Node(PORT, receiver, amount)
                         log.append(transaction)
                         child_conn.send('1') # success
-                        print(colored("(debugging) Client has enough balance -- Transaction added to the logs", 'blue'))
+                        dprint(DEBUG, "(debugging) Client has enough balance -- Transaction added to the logs")
 
                     else:
                     # need to initiate paxos run    
-                        print(colored("(debugging) Cliet doesn't have enough balance; need to start paxos run", 'blue'))
+                        dprint(DEBUG, "(debugging) Cliet doesn't have enough balance; need to start paxos run")
                         pending_trans = [receiver, amount]
                         # send request messages to everyone on the network -- send ballot -- <num, pid>, index = len(bc+1) -- bc is one indexed
                         send_request_messages()
@@ -209,14 +218,14 @@ def communication(child_conn, arguments):
             header = network_message[:HEADERSIZE].decode().strip()
             print(colored(f"(message) Received header: {header}.", 'yellow'))
             if header == 'CATCH-UP':
-                print(colored("(debugging) Heard catch-up", 'blue'))
+                dprint(DEBUG, "(debugging) Heard catch-up")
                 connection.send(pickle.dumps(bchain))
                 connection.close()
-                print(colored("(debugging) Send bchain records", 'blue'))
+                dprint(DEBUG, "(debugging) Send bchain records")
             elif header == 'REQUEST':
                 connection.close()
                 prop_index, prop_ballot = pickle.loads(network_message[HEADERSIZE:])
-                print(colored(f"(debugging) Heard request message from {prop_ballot[1]}", 'blue'))
+                dprint(DEBUG, f"(debugging) Heard request message from {prop_ballot[1]}")
                 #if prop_index < len(bchain): 
                     # proposing filled index                                        (will never happen -- If you are alive you'll have updated bchain)
                 #    missing_entries = bchain[len(bchain) - (prop_index - 1):]
@@ -227,14 +236,14 @@ def communication(child_conn, arguments):
                     print(colored(f"Sending reply: " + f"{'REPLY':<{HEADERSIZE}}" + "0", 'red'))
                     msg = bytes(f"{'REPLY':<{HEADERSIZE}}",'utf-8') + (0).to_bytes(1, 'little')
                     send_to_client(msg, prop_ballot[1])
-                    print(colored(f"(debugging) Replied 0 to {prop_ballot[1]}; replied_ballot := {replied_bal}.", 'blue'))
+                    dprint(DEBUG, f"(debugging) Replied 0 to {prop_ballot[1]}; replied_ballot := {replied_bal}.")
                 else:  
                     # reply to proposed -- send log entries
                     replied_bal = prop_ballot
                     print(colored(f"(debugging) Sending reply: " + f"{'REPLY':<{HEADERSIZE}}" + "0", 'red'))
                     msg = bytes(f"{'REPLY':<{HEADERSIZE}}",'utf-8') + (1).to_bytes(1, 'little') + pickle.dumps(log)
                     send_to_client(msg, prop_ballot[1])
-                    print(colored(f"(debugging) Replied 1 to {prop_ballot[1]}; replied_ballot := {replied_bal}.", 'blue'))
+                    dprint(DEBUG, f"(debugging) Replied 1 to {prop_ballot[1]}; replied_ballot := {replied_bal}.")
             elif header == 'REPLY':
                 connection.close()
                     #'''if network_message[HEADERSIZE].decode() == '2': 
@@ -245,13 +254,13 @@ def communication(child_conn, arguments):
                 print(colored(network_message[HEADERSIZE], 'red'))
                 if network_message[HEADERSIZE] == 0:
                     # detect competing leaders and receive for 10 sec
-                    print(colored("(debugging) Received reply 0; setting leader_race = True", 'blue'))
+                    dprint(DEBUG, "(debugging) Received reply 0; setting leader_race = True")
                     leader_race = True
                     to_prop_logs = []
                     continue # no need of this continue
                 else: 
                     # accepted as a leader
-                    print(colored("(debugging) Received reply 1; selected as leader; logs received from 1", 'blue'))
+                    dprint(DEBUG, "(debugging) Received reply 1; selected as leader; logs received from 1")
                     to_prop_logs = log
                     log_received = pickle.loads(network_message[HEADERSIZE+1:])
                     to_prop_logs += log_received
@@ -259,12 +268,12 @@ def communication(child_conn, arguments):
                         get_logs(client_listen)
                     if not leader_race:
                         # selected as leader; move on to next phase
-                        print(colored("(debugging) No leader_race; sending accept messages", 'blue'))
+                        dprint(DEBUG, "(debugging) No leader_race; sending accept messages")
                         msg = bytes(f"{'ACCEPT':<{HEADERSIZE}}", 'utf-8') + pickle.dumps([ballot_num, to_prop_logs])                        
                         for client in CLIENTS:
                             send_to_client(msg, client)
                     else:
-                        print(colored("(debugging) detected leader race during reply phase", 'blue'))
+                        dprint(DEBUG, "(debugging) detected leader race during reply phase")
                         continue # no need
                             
             elif header == 'ACCEPT':
@@ -274,7 +283,7 @@ def communication(child_conn, arguments):
                 # currently not using to prop logs; but can use if decided to get rid of commit phase
                 if prop_ballot == replied_bal:
                     # move forward with this accept
-                    print(colored(f"(debugging) Received accept from chosen leader -- reply with accept 1 and length of my bchain: {len(bchain)}", 'blue'))
+                    dprint(DEBUG, f"(debugging) Received accept from chosen leader -- reply with accept 1 and length of my bchain: {len(bchain)}")
                     msg = bytes(f"{'ACCEPTED':<{HEADERSIZE}}", 'utf-8') + (1).to_bytes(1, 'little') + bytes(str(len(bchain)), "utf-8")
                     send_to_client(msg, prop_ballot[1])
                     log = []
@@ -283,12 +292,12 @@ def communication(child_conn, arguments):
              
                 elif replied_bal == (0,0):
                     # came out of crash state (ignore the message --  can reply with 'ACCEPTED 0
-                    print(colored("(debugging) received accept message just after recovering from crash", 'blue'))
+                    dprint(DEBUG, "(debugging) received accept message just after recovering from crash")
                     continue # no need
                 
                 else:
                     # leader race, replied to someone else
-                    print(colored("(debugging) got accept message from previous leader; informing about the new game in the town", 'blue'))
+                    dprint(DEBUG, "(debugging) got accept message from previous leader; informing about the new game in the town")
                     msg = bytes(f"{'ACCEPTED':<{HEADERSIZE}}", 'utf-8') + (0).to_bytes(1, 'little')
                     send_to_client(msg, prop_ballot[1])
 
@@ -298,7 +307,7 @@ def communication(child_conn, arguments):
                 print(colored(f"(debugging) Recieved accpted msg: {network_message[HEADERSIZE:]}", 'red'))
                 if network_message[HEADERSIZE:] == 0: # no idea what's going on here
                     # detect leader race
-                    print(colored("(debugging) detected leader race during accept phase", 'blue'))
+                    dprint(DEBUG, "(debugging) detected leader race during accept phase")
                     leader_race = True
                     to_prop_logs = []
                     continue
@@ -308,11 +317,11 @@ def communication(child_conn, arguments):
                     print(colored(f"(debugging) Accepted_index: {accepted_index}",'red'))
                     if accepted_index < len(bchain):
                     # bchain entry already committed
-                        print(colored("(debugging) another accepted for same entry; ingore this accepted", 'blue'))
+                        dprint(DEBUG, "(debugging) another accepted for same entry; ingore this accepted")
                         continue
 
                     else:
-                        print(colored("(debugging) received one accepted; committing bc entry and sending commit", 'blue'))
+                        dprint(DEBUG, "(debugging) received one accepted; committing bc entry and sending commit")
                         entry = BC_entry(to_prop_logs)
                         bchain.append(entry)
                         index = len(bchain)
@@ -323,21 +332,21 @@ def communication(child_conn, arguments):
                         set_to_default()
                         log = []
                         replied_bal = (0, 0)
-                        print(colored("(debugging) checking pending transaction status", 'blue'))
+                        dprint(DEBUG, "(debugging) checking pending transaction status")
                         pend_trans_status = pending_trans_status()
                         #pend_trans_status = False
                         if pend_trans_status == False:
                         # don't have enough balance; send failed transaction message
-                            print(colored("(debugging) client transaction failed, not enough balance :(", 'blue'))
+                            dprint(DEBUG, "(debugging) client transaction failed, not enough balance :(")
                             pending_trans = None
                             child_conn.send('0')
                         else:
                             # push pending trans to log and send reply to client (can make function for this)  
                             if pending_trans == None:
-                                print(colored("(debugging) Was pending transaction; still came here", 'blue'))
+                                dprint(DEBUG, "(debugging) Was pending transaction; still came here")
                                 continue
                             else:     
-                                print(colored("(debugging) client transaction suceeded, pushing to logs", 'blue'))                 
+                                dprint(DEBUG, "(debugging) client transaction suceeded, pushing to logs")                 
                                 receiver = pending_trans[0]
                                 amount = pending_trans[1]
                                 transaction = Node(PORT, receiver, amount)
@@ -347,7 +356,7 @@ def communication(child_conn, arguments):
                 
             elif header == 'COMMIT': 
                 connection.close()
-                print(colored("(debugging) received COMMIT message; adding to bchain irrespective of my participation in this run", 'blue'))
+                dprint(DEBUG, "(debugging) received COMMIT message; adding to bchain irrespective of my participation in this run")
                 # can remove this phase in next itearation, everyone sends to everyone when accepted
                 new_bc_entry = pickle.loads(network_message[HEADERSIZE:])
                 entry = BC_entry(new_bc_entry)

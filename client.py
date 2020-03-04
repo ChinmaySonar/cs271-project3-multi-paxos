@@ -12,12 +12,14 @@ import os
 
 # check for valid command line arguments
 parser = argparse.ArgumentParser(description='Blockchain Client')
-parser.add_argument('--port' ,nargs=1, type=int, required=True, help="Port number for the client")
+parser.add_argument('--port' , nargs=1, type=int, required=True, help="Port number for the client")
+parser.add_argument('--debug', '-d', action='store_true', default=False)
 args = parser.parse_args()
 
 # the pid will serve as the client ID/PID
 HOSTNAME    = 'localhost'
 PORT        = (args.port)[0]
+DEBUG       = (args.debug)
 HEADERSIZE  = 8
 CLIENTS     = [9001,9002,9003]
 CLIENT_ID   = PORT
@@ -117,7 +119,7 @@ if __name__ == '__main__':
     # parent and child process
     parent_conn, child_conn = Pipe()
 
-    arguments = [PORT, CLIENTS, CLIENT_ID]
+    arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG]
     network_communication = Process(target = communication, args=(child_conn, arguments,))
     network_communication.start()
 

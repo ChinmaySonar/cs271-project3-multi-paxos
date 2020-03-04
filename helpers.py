@@ -1,6 +1,7 @@
 from termcolor import colored
 import pickle
 import socket
+import os, sys
 
 #globals
 INIT_BAL = 10
@@ -96,3 +97,10 @@ def send_to_client(msg, client):
         s.close()
     except:
         print(colored(f"(message) Client on port {client} is offline.", 'yellow'))
+
+def dprint(debug=False, msg=""):
+    if not debug:
+        _original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+    else:
+        print(colored(msg, 'blue'))
