@@ -80,7 +80,7 @@ def create_transaction(parent_conn):
             parent_conn.send('3')
             response = get_response(parent_conn)
             log = pickle.loads(response)
-            print(f"(debugging) {log}")
+            dprint(DEBUG, f"(debugging) {log}")
             print_log(log)
             print(colored("(message) -----------------------------", 'yellow'))
     
