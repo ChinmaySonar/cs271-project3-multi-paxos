@@ -126,7 +126,6 @@ def communication(child_conn, arguments):
     CLIENTS = arguments[1]
     CLIENT_ID = arguments[2]
     DEBUG = arguments[3]
-    print(colored(f"(message) Recieved debug as {arguments[3]}, Debug is set to {DEBUG}", 'yellow'))
     
     ballot_num = (0, CLIENT_ID)
     replied_bal = (0,0)
@@ -304,7 +303,7 @@ def communication(child_conn, arguments):
             elif header == 'ACCEPTED':
                 connection.close()
                 # only leader will get this (maybe we need to add in this phase later)
-                print(colored(f"(debugging) Recieved accpted msg: {network_message[HEADERSIZE:]}", 'red'))
+                dprint(f"(debugging) Recieved accpted msg: {network_message[HEADERSIZE:]}", 'red')
                 if network_message[HEADERSIZE:] == 0: # no idea what's going on here
                     # detect leader race
                     dprint(DEBUG, "(debugging) detected leader race during accept phase")
@@ -314,7 +313,7 @@ def communication(child_conn, arguments):
                 else:
                     # received 1 accept -- move on to commit phase
                     accepted_index = int(network_message[HEADERSIZE+1:])
-                    print(colored(f"(debugging) Accepted_index: {accepted_index}",'red'))
+                    dprint(f"(debugging) Accepted_index: {accepted_index}",'red')
                     if accepted_index < len(bchain):
                     # bchain entry already committed
                         dprint(DEBUG, "(debugging) another accepted for same entry; ingore this accepted")

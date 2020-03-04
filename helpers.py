@@ -100,9 +100,9 @@ def send_to_client(msg, client):
 
 # print function to control printing debugging messages
 # the msg should always have prefix "(debugging) *"
-def dprint(debug=False, msg=""):
+def dprint(debug=False, msg="", color='blue'):
     if not debug:
         _original_stdout = sys.stdout
         sys.stdout = open(os.devnull, 'w')
     else:
-        print(colored(msg, 'blue'))
+        print(colored(msg, color))
