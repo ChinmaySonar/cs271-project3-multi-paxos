@@ -102,6 +102,16 @@ def pending_trans_status():
     return False
 
 
+def catchup_log():
+    global log
+    global PORT
+
+    try:
+        log = read_log_from_file(PORT)
+    except:
+        print(colored(f"(message) Error catching up log from file.", 'yellow'))
+
+
 # main communication function
 def communication(child_conn, arguments):
    
@@ -147,6 +157,7 @@ def communication(child_conn, arguments):
             if len(bchain_recvd) > len(bchain):
                 bchain = bchain_recvd
     print(colored("(response) All catched-up", 'yellow'))
+    catchup_log()
 
     # send and receive messages to network and take requests from parent
     while True:
@@ -197,6 +208,7 @@ def communication(child_conn, arguments):
                     if calculateBalance(all_trans, INIT_BAL, PORT) >= amount: 
                         transaction = Node(PORT, receiver, amount)
                         log.append(transaction)
+                        write_log_to_file(PORT, receiver, amount)
                         child_conn.send('1') # success
                         dprint(DEBUG, "(debugging) Client has enough balance -- Transaction added to the logs")
 
@@ -350,6 +362,7 @@ def communication(child_conn, arguments):
                                 amount = pending_trans[1]
                                 transaction = Node(PORT, receiver, amount)
                                 log.append(transaction)
+                                write_log_to_file(PORT, receiver, amount)
                                 child_conn.send('1')
                                 pending_trans = None
                 
