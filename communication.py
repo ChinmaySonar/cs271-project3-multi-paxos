@@ -298,6 +298,7 @@ def communication(child_conn, arguments):
                     msg = bytes(f"{'ACCEPTED':<{HEADERSIZE}}", 'utf-8') + (1).to_bytes(1, 'little') + bytes(str(len(bchain)), "utf-8")
                     send_to_client(msg, prop_ballot[1])
                     log = []
+                    clear_saved_log(PORT)
                     # updating logs for non-leader
                     
              
@@ -342,6 +343,7 @@ def communication(child_conn, arguments):
                         # take care of all other variables which should be set to default
                         set_to_default()
                         log = []
+                        clear_saved_log(PORT)
                         replied_bal = (0, 0)
                         dprint(DEBUG, "(debugging) checking pending transaction status")
                         pend_trans_status = pending_trans_status()
