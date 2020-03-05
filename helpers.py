@@ -141,8 +141,7 @@ def read_log_from_file(sender):
             log.append(Node(int(transaction[0]), int(transaction[1]), float(transaction[2])))
     except:
         print(colored(f"(message) Error reading from log {filename}.", 'red'))
-        f = open(filename, "w")
-        f.close()
+        f = open(filename, "w").close()
         print(colored(f"(message) Created file {filename}.", 'red'))
 
     return log
