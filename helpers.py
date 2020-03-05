@@ -117,3 +117,41 @@ def dprint(debug=False, msg="", color='blue'):
         sys.stdout = open(os.devnull, 'w')
     else:
         print(colored(msg, color))
+
+
+# this function serves the purpose of writing local log to file 
+def write_log_to_file(sender, receiver, amount):
+    filename = f"local_log_{sender}.log"
+    try:
+        f = open(filename, "a+")
+        f.write(f"{sender} {receiver} {amount}")
+    except:
+        print(colored(f"Error writing to file {filename}.", 'red'))
+
+
+# this function serves the purpose of reading local log from file to memory
+def read_log_from_file(sender):
+    log = []
+    filename = f"local_log_{sender}.log"
+    try:
+        f = open(filename, "r")
+        log_entries = f.readlines()
+        for entry in log_entries:
+            transaction = entry.split()
+            log.append(Node(int(transaction[0]), int(transaction[1]), float(transaction[2])))
+    except:
+        print(colored(f"Error reading from log {filename}.", 'red'))
+        f = open(filename, "w")
+        f.close()
+        print(colored(f"Created file {filename}.", 'red'))
+
+    return log
+    
+
+def clear_saved_log(sender):
+    filename = f"local_log_{sender}.log"
+
+    try:
+        f = open(filename, "w").close()
+    except:
+        print(colored(f"Error clearing logs from file {filename}.", 'red'))
