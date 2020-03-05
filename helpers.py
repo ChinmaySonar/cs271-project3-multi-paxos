@@ -126,7 +126,7 @@ def write_log_to_file(sender, receiver, amount):
         f = open(filename, "a+")
         f.write(f"{sender} {receiver} {amount}")
     except:
-        print(colored(f"Error writing to file {filename}.", 'red'))
+        print(colored(f"(message) Error writing to file {filename}.", 'red'))
 
 
 # this function serves the purpose of reading local log from file to memory
@@ -140,13 +140,13 @@ def read_log_from_file(sender):
             transaction = entry.split()
             log.append(Node(int(transaction[0]), int(transaction[1]), float(transaction[2])))
     except:
-        print(colored(f"Error reading from log {filename}.", 'red'))
+        print(colored(f"(message) Error reading from log {filename}.", 'red'))
         f = open(filename, "w")
         f.close()
-        print(colored(f"Created file {filename}.", 'red'))
+        print(colored(f"(message) Created file {filename}.", 'red'))
 
     return log
-    
+
 
 def clear_saved_log(sender):
     filename = f"local_log_{sender}.log"
@@ -154,4 +154,4 @@ def clear_saved_log(sender):
     try:
         f = open(filename, "w").close()
     except:
-        print(colored(f"Error clearing logs from file {filename}.", 'red'))
+        print(colored(f"(message) Error clearing logs from file {filename}.", 'red'))
