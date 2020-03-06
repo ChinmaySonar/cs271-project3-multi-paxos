@@ -39,6 +39,10 @@ def get_response(parent_conn):
 
 # beer time handling
 def beer_time(late_call=False):
+    # show a kiss face
+    if (args.beertime):
+        print("\U0001F618")
+
     if (args.beertime) and os.name == 'posix':
         os.system('say "Beer Time"')
     elif (args.beertime) and os.name == 'Linux':
@@ -48,6 +52,7 @@ def beer_time(late_call=False):
     
     if (args.beertime) and not late_call:
         sys.exit()
+
 
 # main function seeking client requests
 def create_transaction(parent_conn):
