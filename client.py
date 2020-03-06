@@ -1,7 +1,6 @@
 import socket
 import pickle
 import argparse
-import threading
 from multiprocessing import Process, Pipe
 from time import sleep
 from termcolor import colored
