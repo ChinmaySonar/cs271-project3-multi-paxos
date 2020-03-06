@@ -123,7 +123,9 @@ if __name__ == '__main__':
     # to play catch-up
     if CATCHUP:
         print(colored("(message) Catching-up with other clients (10 sec sleep).",'yellow'))
-        sleep(3) 
+        sleep(3)
+    else:
+        print(colored("(message) Catch-up was disabled. Enable it by removing '-c' flag."))
 
     create_transaction(parent_conn)
 
