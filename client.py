@@ -115,6 +115,7 @@ if __name__ == '__main__':
     # parent and child process
     parent_conn, child_conn = Pipe()
 
+    # add arguments here whenever you need to pass to the communication
     arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG, CATCHUP]
     network_communication = Process(target = communication, args=(child_conn, arguments,))
     network_communication.start()
