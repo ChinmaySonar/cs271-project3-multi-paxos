@@ -13,13 +13,15 @@ import os
 # check for valid command line arguments
 parser = argparse.ArgumentParser(description='Blockchain Client')
 parser.add_argument('--port' , nargs=1, type=int, required=True, help="Port number for the client")
-parser.add_argument('--debug', '-d', action='store_true', default=False)
+parser.add_argument('--debug', '-d', action='store_true', default=False, help="Set the flag for debug statements")
+parser.add_argument('--catchup', '-c', action='store_false', default=True, help="Flag to disable catch-up")
 args = parser.parse_args()
 
 # the pid will serve as the client ID/PID
 HOSTNAME    = 'localhost'
 PORT        = (args.port)[0]
 DEBUG       = (args.debug)
+CATCHUP     = (args.catchup)
 HEADERSIZE  = 8
 CLIENTS     = [9001,9002,9003]
 CLIENT_ID   = PORT
@@ -113,13 +115,14 @@ if __name__ == '__main__':
     # parent and child process
     parent_conn, child_conn = Pipe()
 
-    arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG]
+    arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG, CATCHUP]
     network_communication = Process(target = communication, args=(child_conn, arguments,))
     network_communication.start()
 
     # to play catch-up
-    print(colored("(message) Catching-up with other clients (10 sec sleep).",'yellow'))
-    sleep(3) 
+    if CATCHUP:
+        print(colored("(message) Catching-up with other clients (10 sec sleep).",'yellow'))
+        sleep(3) 
 
     create_transaction(parent_conn)
 

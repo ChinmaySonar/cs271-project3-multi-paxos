@@ -136,6 +136,7 @@ def communication(child_conn, arguments):
     CLIENTS = arguments[1]
     CLIENT_ID = arguments[2]
     DEBUG = arguments[3]
+    CATCHUP = arguments[4]
     
     ballot_num = (0, CLIENT_ID)
     replied_bal = (0,0)
@@ -144,20 +145,20 @@ def communication(child_conn, arguments):
     client_listen.bind((HOSTNAME, PORT))
     client_listen.listen()
     
-    
-    # play catch-up (can make separate function to do this)
-    print(colored("(message) Catching-up with others in the network", 'yellow'))
-    msg = bytes(f"{'CATCH-UP':<{HEADERSIZE}}", 'utf-8')
-    for client in CLIENTS:
-        bchain_recvd = send_catch_up(msg, client)
-        if bchain_recvd == '': # crashed client
-            continue
-        else:
-            bchain_recvd = pickle.loads(bchain_recvd)
-            if len(bchain_recvd) > len(bchain):
-                bchain = bchain_recvd
-    print(colored("(response) All catched-up", 'yellow'))
-    catchup_log()
+    if CATCHUP:
+        # play catch-up (can make separate function to do this)
+        print(colored("(message) Catching-up with others in the network", 'yellow'))
+        msg = bytes(f"{'CATCH-UP':<{HEADERSIZE}}", 'utf-8')
+        for client in CLIENTS:
+            bchain_recvd = send_catch_up(msg, client)
+            if bchain_recvd == '': # crashed client
+                continue
+            else:
+                bchain_recvd = pickle.loads(bchain_recvd)
+                if len(bchain_recvd) > len(bchain):
+                    bchain = bchain_recvd
+        print(colored("(response) All catched-up", 'yellow'))
+        catchup_log()
 
     # send and receive messages to network and take requests from parent
     while True:
