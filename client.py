@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser(description='Blockchain Client')
 parser.add_argument('--port' , '-p', nargs=1, type=int, required=True, help="Port number for the client")
 parser.add_argument('--debug', '-d', action='store_true', default=False, help="Set the flag to enable debug statements")
 parser.add_argument('--catchup', '-c', action='store_false', default=True, help="Flag to disable catch-up")
+parser.add_argument('--beertime', '-b', action='store_true', default=False, help="Beer time")
 args = parser.parse_args()
 
 # the pid will serve as the client ID/PID
@@ -113,6 +114,10 @@ def create_transaction(parent_conn):
 if __name__ == '__main__':
     # parent and child process
     parent_conn, child_conn = Pipe()
+
+    if (args.beertime) and os.name == 'posix':
+        os.system('say "Beer Time"')
+        sys.exit()
 
     # add arguments here whenever you need to pass to the communication
     arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG, CATCHUP]
