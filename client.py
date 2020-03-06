@@ -37,6 +37,17 @@ def get_response(parent_conn):
         else:
             continue
 
+# beer time handling
+def beer_time(late_call=False):
+    if (args.beertime) and os.name == 'posix':
+        os.system('say "Beer Time"')
+    elif (args.beertime) and os.name == 'Linux':
+        os.system('spd-say "Beer Time"')
+    else:
+        print(colored("(important) Go get a beer, and a better OS.", 'red'))
+    
+    if (args.beertime) and not late_call:
+        sys.exit()
 
 # main function seeking client requests
 def create_transaction(parent_conn):
@@ -106,6 +117,12 @@ def create_transaction(parent_conn):
             print(colored("(message) Deleting local log for client {PORT}", 'yellow'))
             clear_saved_log(PORT)
 
+        elif option == 6:
+            # this option handles someone needing a beer in the middle -- hidden option
+            args.beertime = True
+            beer_time(True)
+            
+
 
         else:
             print(colored("(response) Incorrect transaction type.", 'red'))
@@ -115,14 +132,8 @@ if __name__ == '__main__':
     # parent and child process
     parent_conn, child_conn = Pipe()
 
-    if (args.beertime) and os.name == 'posix':
-        os.system('say "Beer Time"')
-        sys.exit()
-    elif (args.beertime) and os.name == 'Linux':
-        os.system('spd-say "Beer Time"')
-        sys.exit()
-    else:
-        print(colored("(important) Go get a beer, and a better OS.", 'red'))
+    # call beer time intially if set
+    beer_time()
 
     # add arguments here whenever you need to pass to the communication
     arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG, CATCHUP]
