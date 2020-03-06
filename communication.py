@@ -11,7 +11,7 @@ HEADERSIZE     = 8
 INIT_BAL       = 10
 log            = []
 bchain         = []
-RECV_LENGTH    = 2000
+RECV_LENGTH    = 10000
 CLIENT_ID      = None
 CLIENTS        = None
 PORT           = None
@@ -58,7 +58,7 @@ def get_logs(client_listen):
         dprint(DEBUG, "(debugging) logs received from {client_address}")
         network_message = connection.recv(RECV_LENGTH)
         connection.close()
-        if network_message[-1] == '-1':
+        if network_message[-1] == 54:
             # detect competing leaders and receive for 10 sec
             dprint(DEBUG, "(debugging) detected leader race during reply phase", 'cyan')
             leader_race = True
@@ -66,7 +66,7 @@ def get_logs(client_listen):
             return
         else:
             dprint(DEBUG, "(debugging) logs appended to to_prop_logs")
-            received_logs = pickle.loads(network_message[HEADERSIZE+1:])
+            received_logs = pickle.loads(network_message[HEADERSIZE:])
             to_prop_logs += received_logs
 
 def set_to_default():
@@ -241,23 +241,24 @@ def communication(child_conn, arguments):
                 
                 if prop_ballot < replied_bal: 
                     # replied to higher ballot
-                    print(colored(f"Sending reply: " + f"{'REPLY':<{HEADERSIZE}}" + "0", 'red'))
-                    msg = bytes(f"{'REPLY':<{HEADERSIZE}}",'utf-8') + '-1'
+                    print(colored(f"Sending reply: " + f"{'REPLY':<{HEADERSIZE}}" + "-1", 'red'))
+                    msg = bytes(f"{'REPLY':<{HEADERSIZE}}",'utf-8') + bytes('6','utf-8')
+                    #print(colored(f"Sending reply: "))
                     send_to_client(msg, prop_ballot[1])
                     dprint(DEBUG, f"(debugging) Replied 0 to {prop_ballot[1]}; replied_ballot := {replied_bal}.")
                 else:  
                     # reply to proposed -- send log entries
                     replied_bal = prop_ballot
                     print(colored(f"(debugging) Sending reply: " + f"{'REPLY':<{HEADERSIZE}}" + "0", 'red'))
-                    msg = bytes(f"{'REPLY':<{HEADERSIZE}}",'utf-8') + bytes(str(1), 'utf-8') + pickle.dumps(log)
+                    msg = bytes(f"{'REPLY':<{HEADERSIZE}}",'utf-8') + pickle.dumps(log)
                     send_to_client(msg, prop_ballot[1])
                     dprint(DEBUG, f"(debugging) Replied 1 to {prop_ballot[1]}; replied_ballot := {replied_bal}.")
             elif header == 'REPLY':
                 connection.close()
-                for i in range(100000000):
+                for i in range(500000000):
                     continue
                 #print(colored(f"(message) status of not leader race {network_message[HEADERSIZE]}", 'red'))
-                if network_message[-1] == '-1':
+                if network_message[-1] == 54:
                     # detect competing leaders and receive for 10 sec
                     dprint(DEBUG, "(debugging) Received reply 0; setting leader_race = True")
                     leader_race = True
@@ -267,7 +268,7 @@ def communication(child_conn, arguments):
                     # accepted as a leader
                     dprint(DEBUG, "(debugging) Received reply 1; selected as leader; logs received from 1")
                     to_prop_logs = log
-                    log_received = pickle.loads(network_message[HEADERSIZE+1:])
+                    log_received = pickle.loads(network_message[HEADERSIZE:])
                     to_prop_logs += log_received
                     for i in range(len(CLIENTS)-1): # we already received one reply => -1
                         get_logs(client_listen)
@@ -289,7 +290,7 @@ def communication(child_conn, arguments):
                 if prop_ballot == replied_bal:
                     # move forward with this accept
                     dprint(DEBUG, f"(debugging) Received accept from chosen leader -- reply with accept 1 and length of my bchain: {len(bchain)}")
-                    msg = bytes(f"{'ACCEPTED':<{HEADERSIZE}}", 'utf-8') + (1).to_bytes(1, 'little') + bytes(str(len(bchain)), "utf-8")
+                    msg = bytes('ACCEPTED', 'utf-8') + bytes(str(len(bchain)), "utf-8")
                     send_to_client(msg, prop_ballot[1])
                     log = []
                     clear_saved_log(PORT) # TODO: this needs to be fixed
@@ -304,14 +305,14 @@ def communication(child_conn, arguments):
                 else:
                     # leader race, replied to someone else
                     dprint(DEBUG, "(debugging) got accept message from previous leader; informing about the new game in the town")
-                    msg = bytes(f"{'ACCEPTED':<{HEADERSIZE}}", 'utf-8') + (0).to_bytes(1, 'little') + bytes(str(-1), 'utf-8')
+                    msg = bytes(f"{'ACCEPTED':<{HEADERSIZE}}", 'utf-8') + bytes('6', 'utf-8')
                     send_to_client(msg, prop_ballot[1])
 
             elif header == 'ACCEPTED':
                 connection.close()
                 # only leader will get this (maybe we need to add in this phase later)
                 dprint(f"(debugging) Recieved accpted msg: {network_message[HEADERSIZE:]}")
-                if network_message[HEADERSIZE:] == 0: # no idea what's going on here
+                if network_message[-1] == 54: 
                     # detect leader race
                     dprint(DEBUG, "(debugging) detected leader race during accept phase",'cyan')
                     leader_race = True
@@ -319,17 +320,17 @@ def communication(child_conn, arguments):
                     continue
                 else:
                     # received 1 accept -- move on to commit phase
-                    accepted_index = int(network_message[HEADERSIZE+1:].decode())
-                    if accepted_index == -1:
+                    accepted_index = int(network_message[HEADERSIZE:].decode())
+                    #if accepted_index == -1:
                         # detect leader race
-                        dprint(DEBUG, "(debugging) detected leader race during accept phase",'cyan')
-                        leader_race = True
-                        to_prop_logs = []
-                        continue
+                    #    dprint(DEBUG, "(debugging) detected leader race during accept phase",'cyan')
+                    #    leader_race = True
+                    #    to_prop_logs = []
+                    #    continue
                     dprint(f"(debugging) Accepted_index: {accepted_index}")
                     if accepted_index < len(bchain):
                     # bchain entry already committed
-                        dprint(DEBUG, "(debugging) another accepted for same entry; ingore this accepted")
+                        dprint(DEBUG, "(debugging) another accepted for same entry; ignore this accepted")
                         continue
 
                     else:
