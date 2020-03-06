@@ -41,7 +41,7 @@ def create_transaction(parent_conn):
         
     while True:
         print(colored(f"\n\n(alert) This client ID is {PORT}. Client PID is {os.getpid()}.", 'cyan'))
-        print("What type of transaction do you want to issue?\n\t1. Transfer\n\t2. Balance\n\t3. Print Log\n\t4. Print Blockchain")
+        print("What type of transaction do you want to issue?\n\t1. Transfer\n\t2. Balance\n\t3. Print Log\n\t4. Print Blockchain\n\t5. Clear log")
         option = int(input())
         if option == 1:
             # this option deals with input for new transaction
@@ -98,6 +98,11 @@ def create_transaction(parent_conn):
                 print_log(entry.entry)
                 j += 1
             print(colored("(message) -----------------------------", 'yellow'))
+
+        elif option == 5:
+            # this option deletes the local log on disk
+            print(colored("(message) Deleting local log for client {PORT}"))
+            clear_saved_log(PORT)
 
 
         else:
