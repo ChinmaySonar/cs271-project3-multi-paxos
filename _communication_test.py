@@ -29,6 +29,17 @@ replied_bal   = (0,0)
 count = 0
 
 
+def catchup_log():
+    global log
+    global PORT
+
+    try:
+        log = read_log_from_file(PORT)
+    except:
+        print(colored(f"(message) Error catching up log from file.", 'yellow'))
+
+
+
 # this function serves as a init function to send request message to clients
 def send_request_messages():
     global ballot_num
@@ -98,7 +109,7 @@ def leader_communication(header, network_message, child_conn, client_listen):
 
 
     elif header == "REPLY":
-        Event().wait(2)
+        # Event().wait(2)
         # accepted as a leader
         dprint(DEBUG, "(debugging) Received reply 1; selected as leader; logs received from 1")
         # to_prop_logs = log
@@ -106,10 +117,10 @@ def leader_communication(header, network_message, child_conn, client_listen):
         to_prop_logs += log_received
         count += 1
         
-        # check for len or timeout
+        # TODO: check for len or timeout
         for i in range(2):
             try:
-                client_listen.settimeout(3)
+                client_listen.settimeout(1)
                 client_listen.listen(1)
                 conn, addr = client_listen.accept()
             except socket.timeout:
@@ -193,6 +204,24 @@ def follower_communication(child_conn, arguments):
     client_listen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_listen.bind((HOSTNAME, PORT))
     
+    """
+    This client needs to perform catchup first to start where it was
+    """
+    if CATCHUP:
+        # play catch-up (can make separate function to do this)
+        print(colored("(message) Catching-up with others in the network", 'yellow'))
+        msg = bytes(f"{'CATCH-UP':<{HEADERSIZE}}", 'utf-8')
+        for client in CLIENTS:
+            bchain_recvd = send_catch_up(msg, client)
+            if bchain_recvd == '': # crashed client
+                continue
+            else:
+                bchain_recvd = pickle.loads(bchain_recvd)
+                if len(bchain_recvd) > len(bchain):
+                    bchain = bchain_recvd
+        print(colored("(response) All catched-up", 'yellow'))
+        catchup_log()
+
     while True:
         try:
             client_listen.settimeout(1)
@@ -241,7 +270,13 @@ def follower_communication(child_conn, arguments):
 
         # This code handles everything that a client would respond to
         else:
-            if header == 'REQUEST':
+            if header == 'CATCH-UP':
+                dprint(DEBUG, "(debugging) Heard catch-up")
+                conn.send(pickle.dumps(bchain))
+                # conn.close()
+                dprint(DEBUG, "(debugging) Send bchain records")
+
+            elif header == 'REQUEST':
                 prop_ballot = (pickle.loads(data[HEADERSIZE:])).ballot
                 dprint(DEBUG, f"(debugging) Heard request message from {prop_ballot[1]}")
 
@@ -324,3 +359,4 @@ def follower_communication(child_conn, arguments):
             elif header == "NO":
                 leader_communication(header, data, child_conn, client_listen)
                 continue
+            conn.close()
