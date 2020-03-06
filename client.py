@@ -118,6 +118,9 @@ if __name__ == '__main__':
     if (args.beertime) and os.name == 'posix':
         os.system('say "Beer Time"')
         sys.exit()
+    elif (args.beertime) and os.name == 'Linux':
+        os.system('spd-say "your program has finished"')
+        sys.exit()
 
     # add arguments here whenever you need to pass to the communication
     arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG, CATCHUP]
