@@ -119,7 +119,7 @@ if __name__ == '__main__':
         os.system('say "Beer Time"')
         sys.exit()
     elif (args.beertime) and os.name == 'Linux':
-        os.system('spd-say "your program has finished"')
+        os.system('spd-say "Beer Time"')
         sys.exit()
 
     # add arguments here whenever you need to pass to the communication
