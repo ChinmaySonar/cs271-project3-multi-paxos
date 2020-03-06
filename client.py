@@ -13,7 +13,7 @@ import os
 # check for valid command line arguments
 parser = argparse.ArgumentParser(description='Blockchain Client')
 parser.add_argument('--port' , nargs=1, type=int, required=True, help="Port number for the client")
-parser.add_argument('--debug', '-d', action='store_true', default=False, help="Set the flag for debug statements")
+parser.add_argument('--debug', '-d', action='store_true', default=False, help="Set the flag to enable debug statements")
 parser.add_argument('--catchup', '-c', action='store_false', default=True, help="Flag to disable catch-up")
 args = parser.parse_args()
 
