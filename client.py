@@ -121,6 +121,8 @@ if __name__ == '__main__':
     elif (args.beertime) and os.name == 'Linux':
         os.system('spd-say "Beer Time"')
         sys.exit()
+    else:
+        print(colored("(important) Go get a beer, and a better OS.", 'red'))
 
     # add arguments here whenever you need to pass to the communication
     arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG, CATCHUP]
