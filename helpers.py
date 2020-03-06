@@ -124,7 +124,7 @@ def write_log_to_file(sender, receiver, amount):
     filename = f"local_log_{sender}.log"
     try:
         f = open(filename, "a+")
-        f.write(f"{sender} {receiver} {amount}")
+        f.write(f"{sender} {receiver} {amount}\n")
     except:
         print(colored(f"(message) Error writing to file {filename}.", 'red'))
 
