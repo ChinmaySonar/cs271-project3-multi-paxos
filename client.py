@@ -118,10 +118,12 @@ def create_transaction(parent_conn):
                 j += 1
             print(colored("(message) -----------------------------", 'yellow'))
 
+
         elif option == 5:
             # this option deletes the local log on disk
             print(colored("(message) Deleting local log for client {PORT}", 'yellow'))
             clear_saved_log(PORT)
+
 
         elif option == 6:
             # this option handles someone needing a beer in the middle -- hidden option
