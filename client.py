@@ -90,6 +90,7 @@ def create_transaction(parent_conn):
             request = '2'
             parent_conn.send(request)
             response = get_response(parent_conn)
+            dprint(DEBUG, f"(debugging) {response}")
             response = pickle.loads(response)
             for client in response:
                 print(colored(f"(response) Balance for port {client[1]} is {client[0]}.",'yellow'))
@@ -101,8 +102,8 @@ def create_transaction(parent_conn):
             print(colored("(message) -----------------------------", 'yellow'))
             parent_conn.send('3')
             response = get_response(parent_conn)
+            dprint(DEBUG, f"(debugging) {response}")
             log = pickle.loads(response)
-            dprint(DEBUG, f"(debugging) {log}")
             print_log(log)
             print(colored("(message) -----------------------------", 'yellow'))
     
@@ -113,6 +114,7 @@ def create_transaction(parent_conn):
             print(colored("(message) -----------------------------", 'yellow'))
             parent_conn.send('4')
             response = get_response(parent_conn)
+            dprint(DEBUG, f"(debugging) {response}")
             bchain = pickle.loads(response)
             j = 0
             for entry in bchain:

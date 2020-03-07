@@ -21,13 +21,13 @@ DEBUG          = False
 
 # paxos globals
 index         = 0               # (should always be number committed entries in my blockchain -- will be initialized at zero
-ballot_num    = (0,0)            # (useful for election and accepting a value) -- initialized at None, updated while sending request message and after receiving request message
+ballot_num    = (0,0)           # (useful for election and accepting a value) -- initialized at None, updated while sending request message and after receiving request message
 leader_race   = False           # (true if we detect race; then we sleep for random time)
 pending_trans = None            # (used in competing leader situation when received client request but somebody else is leader for this paxos run)
 to_prop_logs  = []              # used only when chosen as leader -- safety variable in case of leader race
 replied_bal   = (0,0)
-count = 0
-
+count         = 0
+flag          = False           # open flag for everything but nothing
 
 def catchup_log():
     global log
@@ -92,6 +92,7 @@ def leader_communication(header, network_message, child_conn, client_listen):
     global log
     global DEBUG
     global count
+    global flag
 
 
     # Check for leader race
@@ -166,10 +167,12 @@ def leader_communication(header, network_message, child_conn, client_listen):
 
 
     elif header == "NO":
-        replied_bal = (pickle.loads(network_message[HEADERSIZE:])).ballot
-        print(colored(f"(message) Leader race. Highest ballot is {replied_bal}. Self ballot is {ballot_num}.Aborting...", 'red'))
-        set_to_default()
-        child_conn.send("2")
+        if not flag:
+            replied_bal = (pickle.loads(network_message[HEADERSIZE:])).ballot
+            print(colored(f"(message) Leader race. Highest ballot is {replied_bal}. Self ballot is {ballot_num}.Aborting...", 'red'))
+            set_to_default()
+            child_conn.send("2")
+            flag = True
 
 def follower_communication(child_conn, arguments):
     global HOSTNAME
