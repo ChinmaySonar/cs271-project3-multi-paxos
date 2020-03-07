@@ -156,6 +156,7 @@ if __name__ == '__main__':
     else:
         print(colored("(message) Catch-up was disabled. Enable it by removing '-c' flag."))
 
+    # for user input
     create_transaction(parent_conn)
 
     # check if we can do this given we want to handle failures..

@@ -1,8 +1,9 @@
 import socket
 import pickle
 from time import sleep
-from threading import Event
+import threading
 from termcolor import colored
+from multiprocessing import Process
 from helpers import *
 
 
@@ -20,7 +21,7 @@ DEBUG          = False
 
 # paxos globals
 index         = 0               # (should always be number committed entries in my blockchain -- will be initialized at zero
-ballot_num    = None            # (useful for election and accepting a value) -- initialized at None, updated while sending request message and after receiving request message
+ballot_num    = (0,0)            # (useful for election and accepting a value) -- initialized at None, updated while sending request message and after receiving request message
 leader_race   = False           # (true if we detect race; then we sleep for random time)
 pending_trans = None            # (used in competing leader situation when received client request but somebody else is leader for this paxos run)
 to_prop_logs  = []              # used only when chosen as leader -- safety variable in case of leader race
@@ -94,9 +95,10 @@ def leader_communication(header, network_message, child_conn, client_listen):
 
 
     # Check for leader race
-    if header != "START" and replied_bal != ballot_num and replied_bal != (0,0):
-        header = "NO"
-        network_message = bytes(f"{'NO':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(MessageFromat(replied_bal))
+    # if header != "START" and replied_bal != ballot_num and replied_bal != (0,0):
+    #     dprint(DEBUG, f"(debugging) Current ballot no: {ballot_num}, Recieved ballot: {replied_bal}")
+    #     header = "NO"
+    #     network_message = bytes(f"{'NO':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(MessageFromat(replied_bal))
 
 
     # first send request to be a leader
@@ -105,55 +107,34 @@ def leader_communication(header, network_message, child_conn, client_listen):
         prop_ballot = ballot_num
         msg = MessageFromat(ballot_num)
         replied_bal = ballot_num
+        dprint(DEBUG, f"(debugging) Ballot No: {ballot_num}, Replied Ballot: {replied_bal}")
         msg = bytes(f"{'REQUEST':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(msg)
         for client in CLIENTS:
             send_to_client(msg, client)
-        # send_to_client(msg, PORT)
+        send_to_client(msg, PORT)
 
 
     elif header == "REPLY":
         # Event().wait(2)
         # accepted as a leader
-        dprint(DEBUG, "(debugging) Received reply 1; selected as leader; logs received from 1")
-        to_prop_logs = log
+        dprint(DEBUG, "(debugging) Received reply, log recieved from a client")
+        # to_prop_logs = log
         log_received = pickle.loads(network_message[HEADERSIZE:])
         to_prop_logs += log_received
         count += 1
         
-        # TODO: check for len or timeout
-        for i in range(2):
-            try:
-                client_listen.settimeout(3)
-                client_listen.listen(1)
-                conn, addr = client_listen.accept()
-            except socket.timeout:
-                pass
-            else:
-                network_message = conn.recv(RECV_LENGTH)
-                if network_message[:HEADERSIZE].decode().strip() == "REPLY":
-                    log_received = pickle.loads(network_message[HEADERSIZE:])
-                    dprint(DEBUG, f"(debugging) Adding log {log_received} to proposed logs.")
-                    for recv_log in log_received:
-                        if recv_log not in to_prop_logs:
-                            to_prop_logs.append(recv_log)
-                    dprint(DEBUG, f"(debugging) Total log size now is {len(to_prop_logs)}.")
-                    count += 1
+        dprint(DEBUG, f"(debugging) Total log size now is {len(to_prop_logs)}.")
         
-        if count >= len(CLIENTS)-1:
+        threading.Event().wait(5)
+
+        if count >= len(CLIENTS):
             msg = bytes(f"{'ACCEPT':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(MessageFromat(ballot_num))
             for client in CLIENTS:
                 send_to_client(msg, client)
+            send_to_client(msg, PORT)
+        else:
+            return
 
-            log = []    # need to clear the logs so far since we have already added these
-            dprint(DEBUG, f"(debugging) Pending Transaction is {pending_trans}.")
-            if pending_trans is not None and len(pending_trans) == 2:
-                if calculateBalance(bchain, INIT_BAL, PORT) >= pending_trans[1]:
-                    transaction = Node(PORT, pending_trans[0], pending_trans[1])
-                    log.append(transaction)
-                    write_log_to_file(PORT, pending_trans[0], pending_trans[1])
-                    child_conn.send("1")
-                else:
-                    child_conn.send("0")
 
         dprint(DEBUG, f"(debugging) Received logs from {count} clients")
 
@@ -161,21 +142,33 @@ def leader_communication(header, network_message, child_conn, client_listen):
     elif header == "ACCEPTED":
         dprint(DEBUG, f"(debugging) Recieved accpted msg: {network_message[HEADERSIZE:]}", 'red')
         # moving on to commit phase
-        entry = BC_entry(to_prop_logs)
-        bchain.append(entry)
-        index = len(bchain)
+        if len(to_prop_logs) != 0:
+            entry = BC_entry(to_prop_logs)
+            bchain.append(entry)
+            index = len(bchain)
 
-        msg = bytes(f"{'COMMIT':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(entry)
-        for client in CLIENTS:
-            send_to_client(msg, client)
-        
-        set_to_default()
-        clear_saved_log(PORT)
+            msg = bytes(f"{'COMMIT':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(entry)
+            for client in CLIENTS:
+                send_to_client(msg, client)
+
+            log = []    # need to clear the logs so far since we have already added these
+            dprint(DEBUG, f"(debugging) Pending Transaction is {pending_trans}.")
+            if pending_trans is not None and len(pending_trans) == 2:
+                if calculateBalance(all_transactions(bchain), INIT_BAL, PORT) >= pending_trans[1]:
+                    log.append(Node(PORT, pending_trans[0], pending_trans[1]))
+                    write_log_to_file(PORT, pending_trans[0], pending_trans[1])
+                    child_conn.send("1")
+                else:
+                    child_conn.send("0")
+
+            set_to_default()
+            clear_saved_log(PORT)
 
 
     elif header == "NO":
         replied_bal = (pickle.loads(network_message[HEADERSIZE:])).ballot
         print(colored(f"(message) Leader race. Highest ballot is {replied_bal}. Self ballot is {ballot_num}.Aborting...", 'red'))
+        set_to_default()
         child_conn.send("2")
 
 def follower_communication(child_conn, arguments):
@@ -271,7 +264,7 @@ def follower_communication(child_conn, arguments):
 
                     else:
                         # need to initiate paxos run    
-                        dprint(DEBUG, "(debugging) Cliet doesn't have enough balance; need to start paxos run")
+                        dprint(DEBUG, "(debugging) Client doesn't have enough balance; need to start paxos run")
                         msg = bytes(f"{'START':<{HEADERSIZE}}", 'utf-8')
                         send_to_client(msg, PORT)
                         pending_trans = [receiver, amount]
@@ -353,18 +346,26 @@ def follower_communication(child_conn, arguments):
             # leader code 
 
             elif header == "START":
-                leader_communication(header, data, child_conn, client_listen)
+                p = threading.Thread(name="Leader process", target=leader_communication, args=(header, data, child_conn, client_listen,))
+                p.start()
+                p.join()
                 continue
 
             elif header == "REPLY":
-                leader_communication(header, data, child_conn, client_listen)
+                p = threading.Thread(name="Leader process", target=leader_communication, args=(header, data, child_conn, client_listen,))
+                p.start()
+                p.join()
                 continue
 
             elif header == "ACCEPTED":
-                leader_communication(header, data, child_conn, client_listen)
+                p = threading.Thread(name="Leader process", target=leader_communication, args=(header, data, child_conn, client_listen,))
+                p.start()
+                p.join()
                 continue
 
             elif header == "NO":
-                leader_communication(header, data, child_conn, client_listen)
+                p = threading.Thread(name="Leader process", target=leader_communication, args=(header, data, child_conn, client_listen,))
+                p.start()
+                p.join()
                 continue
             conn.close()
