@@ -118,7 +118,7 @@ def leader_communication(header, network_message, child_conn, client_listen):
         # Event().wait(2)
         # accepted as a leader
         dprint(DEBUG, "(debugging) Received reply 1; selected as leader; logs received from 1")
-        # to_prop_logs = log
+        to_prop_logs = log
         log_received = pickle.loads(network_message[HEADERSIZE:])
         to_prop_logs += log_received
         count += 1
