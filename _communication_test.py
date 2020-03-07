@@ -23,7 +23,6 @@ index         = 0               # (should always be number committed entries in 
 ballot_num    = None            # (useful for election and accepting a value) -- initialized at None, updated while sending request message and after receiving request message
 leader_race   = False           # (true if we detect race; then we sleep for random time)
 pending_trans = None            # (used in competing leader situation when received client request but somebody else is leader for this paxos run)
-replied       = False           # (Flag to check if replied to someone or not)
 to_prop_logs  = []              # used only when chosen as leader -- safety variable in case of leader race
 replied_bal   = (0,0)
 count = 0
@@ -62,7 +61,6 @@ def send_request_messages():
 def set_to_default():
     global log
     global leader_race
-    global replied
     global ballot_num
     global to_prop_logs
     global DEBUG
@@ -71,7 +69,6 @@ def set_to_default():
 
     # log = []
     leader_race = False
-    replied = False 
     ballot_num = (0, CLIENT_ID)
     to_prop_logs = []
     replied_bal = (0, 0)
@@ -99,6 +96,7 @@ def leader_communication(header, network_message, child_conn, client_listen):
     # Check for leader race
     if header != "START" and replied_bal != ballot_num and replied_bal != (0,0):
         header = "NO"
+        network_message = bytes(f"{'NO':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(MessageFromat(replied_bal))
 
 
     # first send request to be a leader
@@ -188,7 +186,6 @@ def follower_communication(child_conn, arguments):
     global bchain
     global RECV_LENGTH
     global index
-    global replied
     global leader_race
     global pending_trans
     global ballot_num
