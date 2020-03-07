@@ -123,7 +123,7 @@ def create_transaction(parent_conn):
 
         elif option == 5:
             # this option deletes the local log on disk
-            print(colored("(message) Deleting local log for client {PORT}", 'yellow'))
+            print(colored(f"(message) Deleting local log for client {PORT}", 'yellow'))
             clear_saved_log(PORT)
 
         elif option == 6:

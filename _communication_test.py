@@ -69,7 +69,7 @@ def set_to_default():
     global replied_bal
     global count
 
-    log = []
+    # log = []
     leader_race = False
     replied = False 
     ballot_num = (0, CLIENT_ID)
@@ -95,10 +95,9 @@ def leader_communication(header, network_message, child_conn, client_listen):
     global DEBUG
     global count
 
-    """
-    Check for leader race
-    """
-    if header != "START" and replied_bal != ballot_num:
+
+    # Check for leader race
+    if header != "START" and replied_bal != ballot_num and replied_bal != (0,0):
         header = "NO"
 
 
@@ -111,7 +110,7 @@ def leader_communication(header, network_message, child_conn, client_listen):
         msg = bytes(f"{'REQUEST':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(msg)
         for client in CLIENTS:
             send_to_client(msg, client)
-        send_to_client(msg, PORT)
+        # send_to_client(msg, PORT)
 
 
     elif header == "REPLY":
@@ -126,40 +125,41 @@ def leader_communication(header, network_message, child_conn, client_listen):
         # TODO: check for len or timeout
         for i in range(2):
             try:
-                client_listen.settimeout(1)
+                client_listen.settimeout(3)
                 client_listen.listen(1)
                 conn, addr = client_listen.accept()
             except socket.timeout:
                 pass
             else:
-                log_received = pickle.loads(network_message[HEADERSIZE:])
-                dprint(DEBUG, f"(debugging) Adding log {log_received} to proposed logs.")
-                for recv_log in log_received:
-                    if recv_log not in to_prop_logs:
-                        to_prop_logs.append(recv_log)
-                dprint(DEBUG, f"(debugging) Total log size now is {len(to_prop_logs)}.")
-                count += 1
+                network_message = conn.recv(RECV_LENGTH)
+                if network_message[:HEADERSIZE].decode().strip() == "REPLY":
+                    log_received = pickle.loads(network_message[HEADERSIZE:])
+                    dprint(DEBUG, f"(debugging) Adding log {log_received} to proposed logs.")
+                    for recv_log in log_received:
+                        if recv_log not in to_prop_logs:
+                            to_prop_logs.append(recv_log)
+                    dprint(DEBUG, f"(debugging) Total log size now is {len(to_prop_logs)}.")
+                    count += 1
         
-        if count >= len(CLIENTS):
+        if count >= len(CLIENTS)-1:
             msg = bytes(f"{'ACCEPT':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(MessageFromat(ballot_num))
             for client in CLIENTS:
                 send_to_client(msg, client)
-            send_to_client(msg, PORT)
 
-        dprint(DEBUG, f"(debugging) Pending Transaction is {pending_trans}.")
-        if pending_trans is not None and len(pending_trans) == 2:
-            if calculateBalance(bchain, INIT_BAL, PORT) >= pending_trans[1]:
-                transaction = Node(PORT, pending_trans[0], pending_trans[1])
-                log.append(transaction)
-                child_conn.send("1")
-            else:
-                child_conn.send("0")
+            log = []    # need to clear the logs so far since we have already added these
+            dprint(DEBUG, f"(debugging) Pending Transaction is {pending_trans}.")
+            if pending_trans is not None and len(pending_trans) == 2:
+                if calculateBalance(bchain, INIT_BAL, PORT) >= pending_trans[1]:
+                    transaction = Node(PORT, pending_trans[0], pending_trans[1])
+                    log.append(transaction)
+                    write_log_to_file(PORT, pending_trans[0], pending_trans[1])
+                    child_conn.send("1")
+                else:
+                    child_conn.send("0")
 
         dprint(DEBUG, f"(debugging) Received logs from {count} clients")
 
 
-
-            
     elif header == "ACCEPTED":
         dprint(DEBUG, f"(debugging) Recieved accpted msg: {network_message[HEADERSIZE:]}", 'red')
         # moving on to commit phase
@@ -286,7 +286,7 @@ def follower_communication(child_conn, arguments):
                 prop_ballot = (pickle.loads(data[HEADERSIZE:])).ballot
                 dprint(DEBUG, f"(debugging) Heard request message from {prop_ballot[1]}")
 
-                Event().wait(2)
+                # Event().wait(2)
 
                 """
                 So this comparision I am not sure if it works. What if index increases but the client_id doesn't?
@@ -344,6 +344,7 @@ def follower_communication(child_conn, arguments):
                 index = len(bchain)
                 # take care of variables which needs to be set to default
                 set_to_default()
+                log = []
                 continue
             
 
