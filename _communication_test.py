@@ -95,6 +95,12 @@ def leader_communication(header, network_message, child_conn, client_listen):
     global DEBUG
     global count
 
+    """
+    Check for leader race
+    """
+    if header != "START" and replied_bal != ballot_num:
+        header = "NO"
+
 
     # first send request to be a leader
     if header == "START":
@@ -334,8 +340,7 @@ def follower_communication(child_conn, arguments):
                 dprint(DEBUG, "(debugging) received COMMIT message; adding to bchain irrespective of my participation in this run")
                 # can remove this phase in next itearation, everyone sends to everyone when accepted
                 new_bc_entry = pickle.loads(data[HEADERSIZE:])
-                entry = BC_entry(new_bc_entry)
-                bchain.append(entry)
+                bchain.append(new_bc_entry)
                 index = len(bchain)
                 # take care of variables which needs to be set to default
                 set_to_default()
