@@ -176,7 +176,8 @@ def leader_communication(header, network_message, child_conn, client_listen):
 
 
     elif header == "NO":
-        print(colored("(message) Leader race. Aborting...", 'red'))
+        replied_bal = (pickle.loads(network_message[HEADERSIZE:])).ballot
+        print(colored(f"(message) Leader race. Highest ballot is {replied_bal}. Self ballot is {ballot_num}.Aborting...", 'red'))
         child_conn.send("2")
 
 def follower_communication(child_conn, arguments):
@@ -253,6 +254,10 @@ def follower_communication(child_conn, arguments):
                     dprint(DEBUG, "(debugging) Received print bchain request")
                     child_conn.send(pickle.dumps(bchain))
                     dprint(DEBUG, "(debugging) Sent bchain to parent")
+                
+                elif request[0] == '5': # clear the log
+                    dprint(DEBUG, "(debugging) Clearing local log.")
+                    log = []
 
                 elif request[0] == '1': # transfer
                     dprint(DEBUG, "(debugging) Received transfer request from client")
@@ -303,7 +308,7 @@ def follower_communication(child_conn, arguments):
                 else:
                     # replied to higher ballot -- reply no
                     dprint(DEBUG, "(debugging) Already replied to a higher ballot. Leader race. Sending abort.", 'red')
-                    msg = bytes(f"{'NO':<{HEADERSIZE}}", 'utf-8')
+                    msg = bytes(f"{'NO':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(MessageFromat(replied_bal))
                     send_to_client(msg, prop_ballot[1])
                     continue
 
@@ -332,7 +337,7 @@ def follower_communication(child_conn, arguments):
                 else:
                     # replied to higher ballot -- reply no
                     dprint(DEBUG, "(debugging) Already replied to a higher ballot. Leader race. Sending abort.", 'red')
-                    msg = bytes(f"{'NO':<{HEADERSIZE}}", 'utf-8')
+                    msg = bytes(f"{'NO':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(MessageFromat(replied_bal))
                     send_to_client(msg, prop_ballot[1])
                     continue
 

@@ -125,6 +125,7 @@ def create_transaction(parent_conn):
             # this option deletes the local log on disk
             print(colored(f"(message) Deleting local log for client {PORT}", 'yellow'))
             clear_saved_log(PORT)
+            parent_conn.send('5')
 
         elif option == 6:
             # this option handles someone needing a beer in the middle -- hidden option
@@ -145,7 +146,7 @@ if __name__ == '__main__':
 
     # add arguments here whenever you need to pass to the communication
     arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG, CATCHUP]
-    network_communication = Process(target=follower_communication, args=(child_conn, arguments,))
+    network_communication = Process(name="Follower process", target=follower_communication, args=(child_conn, arguments,))
     network_communication.start()
 
     # to play catch-up
