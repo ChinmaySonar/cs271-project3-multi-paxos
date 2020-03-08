@@ -357,25 +357,25 @@ def follower_communication(child_conn, arguments):
             # leader code 
 
             elif header == "START":
-                p = threading.Thread(name="Leader process", target=leader_communication, args=(header, data, child_conn, client_listen,))
+                p = threading.Thread(name="Leader process for start", target=leader_communication, args=(header, data, child_conn, client_listen,))
                 p.start()
                 p.join()
                 continue
 
             elif header == "REPLY":
-                p = threading.Thread(name="Leader process", target=leader_communication, args=(header, data, child_conn, client_listen,))
+                p = threading.Thread(name="Leader process for reply", target=leader_communication, args=(header, data, child_conn, client_listen,))
                 p.start()
                 p.join()
                 continue
 
             elif header == "ACCEPTED":
-                p = threading.Thread(name="Leader process", target=leader_communication, args=(header, data, child_conn, client_listen,))
+                p = threading.Thread(name="Leader process for accepted", target=leader_communication, args=(header, data, child_conn, client_listen,))
                 p.start()
                 p.join()
                 continue
 
             elif header == "NO":
-                p = threading.Thread(name="Leader process", target=leader_communication, args=(header, data, child_conn, client_listen,))
+                p = threading.Thread(name="Leader process for no", target=leader_communication, args=(header, data, child_conn, client_listen,))
                 p.start()
                 p.join()
                 continue
