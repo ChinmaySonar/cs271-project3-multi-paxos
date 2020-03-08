@@ -77,10 +77,6 @@ def set_to_default():
     dprint(DEBUG, "(debugging) setting values to default at the end of paxos run")
 
 
-def get_logs():
-    # TODO: this function should go through each client and collect logs or timeout
-    pass
-
 def leader_communication(header, network_message, child_conn, client_listen):
     global ballot_num
     global CLIENT_ID
