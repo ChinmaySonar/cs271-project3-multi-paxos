@@ -60,6 +60,11 @@ class BC_entry:
         self.entry = bc_entry
 
 
+class MessageFromat:
+
+    def __init__(self, ballot, data=[]):
+        self.ballot = ballot
+        self.data = data
 
 ## helper functions
 # returns all transaction in bchain + log as a list
@@ -124,7 +129,7 @@ def write_log_to_file(sender, receiver, amount):
     filename = f"local_log_{sender}.log"
     try:
         f = open(filename, "a+")
-        f.write(f"{sender} {receiver} {amount}")
+        f.write(f"{sender} {receiver} {amount}\n")
     except:
         print(colored(f"(message) Error writing to file {filename}.", 'red'))
 

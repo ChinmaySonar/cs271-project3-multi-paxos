@@ -38,6 +38,24 @@ def get_response(parent_conn):
             continue
 
 
+# beer time handling
+def beer_time(late_call=False):
+    # show a kiss face
+    if (args.beertime):
+        print("\U0001F618")
+
+    if (args.beertime) and os.name == 'posix':
+        os.system('say "Beer Time"')
+    elif (args.beertime) and os.name == 'Linux':
+        os.system('spd-say "Beer Time"')
+    elif (args.beertime):
+        print(colored("(important) Go get a beer, and a better OS.", 'red'))
+
+    if (args.beertime) and not late_call:
+        sys.exit()
+
+
+
 # main function seeking client requests
 def create_transaction(parent_conn):
         
@@ -58,6 +76,8 @@ def create_transaction(parent_conn):
                 response = get_response(parent_conn)
                 if response[0] == '1':
                     print(colored("(response) SUCCESS", 'green'))
+                elif response[0] == '2':
+                    print(colored("(response) LEADER ERROR", 'red'))
                 else:
                     print(colored("(response) INCORRECT", 'red'))
             else:
@@ -70,6 +90,7 @@ def create_transaction(parent_conn):
             request = '2'
             parent_conn.send(request)
             response = get_response(parent_conn)
+            dprint(DEBUG, f"(debugging) {response}")
             response = pickle.loads(response)
             for client in response:
                 print(colored(f"(response) Balance for port {client[1]} is {client[0]}.",'yellow'))
@@ -81,8 +102,8 @@ def create_transaction(parent_conn):
             print(colored("(message) -----------------------------", 'yellow'))
             parent_conn.send('3')
             response = get_response(parent_conn)
+            dprint(DEBUG, f"(debugging) {response}")
             log = pickle.loads(response)
-            dprint(DEBUG, f"(debugging) {log}")
             print_log(log)
             print(colored("(message) -----------------------------", 'yellow'))
     
@@ -93,6 +114,7 @@ def create_transaction(parent_conn):
             print(colored("(message) -----------------------------", 'yellow'))
             parent_conn.send('4')
             response = get_response(parent_conn)
+            dprint(DEBUG, f"(debugging) {response}")
             bchain = pickle.loads(response)
             j = 0
             for entry in bchain:
@@ -103,8 +125,14 @@ def create_transaction(parent_conn):
 
         elif option == 5:
             # this option deletes the local log on disk
-            print(colored("(message) Deleting local log for client {PORT}", 'yellow'))
+            print(colored(f"(message) Deleting local log for client {PORT}", 'yellow'))
             clear_saved_log(PORT)
+            parent_conn.send('5')
+
+        elif option == 6:
+            # this option handles someone needing a beer in the middle -- hidden option
+            args.beertime = True
+            beer_time(True)
 
 
         else:
@@ -115,18 +143,12 @@ if __name__ == '__main__':
     # parent and child process
     parent_conn, child_conn = Pipe()
 
-    if (args.beertime) and os.name == 'posix':
-        os.system('say "Beer Time"')
-        sys.exit()
-    elif (args.beertime) and os.name == 'Linux':
-        os.system('spd-say "Beer Time"')
-        sys.exit()
-    else:
-        print(colored("(important) Go get a beer, and a better OS.", 'red'))
+    # call beer time intially if set
+    beer_time()
 
     # add arguments here whenever you need to pass to the communication
     arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG, CATCHUP]
-    network_communication = Process(target = communication, args=(child_conn, arguments,))
+    network_communication = Process(name="Follower process", target=follower_communication, args=(child_conn, arguments,))
     network_communication.start()
 
     # to play catch-up
@@ -136,6 +158,7 @@ if __name__ == '__main__':
     else:
         print(colored("(message) Catch-up was disabled. Enable it by removing '-c' flag."))
 
+    # for user input
     create_transaction(parent_conn)
 
     # check if we can do this given we want to handle failures..
