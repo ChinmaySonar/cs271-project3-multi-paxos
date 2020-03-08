@@ -4,6 +4,8 @@
 client.py [-h] --port PORT [--debug] [--catchup] [--beertime]
 ```
 
+`--help, -h`    : Help
+
 `--port, -p`    : Specify port number
 
 `--debug, -d`   : Enable debug statements
