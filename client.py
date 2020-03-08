@@ -5,7 +5,7 @@ from multiprocessing import Process, Pipe
 from time import sleep
 from termcolor import colored
 from helpers import *
-from _communication_test import *
+from communication import *
 import os
 
 
