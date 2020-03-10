@@ -18,6 +18,7 @@ CLIENT_ID      = None
 CLIENTS        = None
 PORT           = None
 DEBUG          = False
+RETRY          = False
 
 # paxos globals
 index         = 0               # (should always be number committed entries in my blockchain -- will be initialized at zero
@@ -87,6 +88,7 @@ def leader_communication(header, network_message, child_conn, client_listen):
     global bchain
     global log
     global DEBUG
+    global RETRY
     global count
     global flag
     global pending_trans
@@ -152,29 +154,31 @@ def leader_communication(header, network_message, child_conn, client_listen):
                 else:
                     child_conn.send("0")
             pending_trans = None
+            flag = False
             set_to_default()
             clear_saved_log(PORT)
 
 
     elif header == "NO":
-        if not flag and pending_trans:
-            dprint(DEBUG, f"Going to retry the transaction.")
-            # random wait
-            threading.Event().wait(random.randint(10, 20))
-            set_to_default()
-            clear_saved_log(PORT)
-            network_message = bytes(f"{'START':<{HEADERSIZE}}", 'utf-8')
-            header = "START"
-            leader_communication(header, network_message, child_conn, client_listen)
-            flag = True
+        if RETRY:
+            if not flag and pending_trans:
+                dprint(DEBUG, f"Going to retry the transaction.")
+                # random wait
+                threading.Event().wait(random.randint(10, 20))
+                set_to_default()
+                clear_saved_log(PORT)
+                network_message = bytes(f"{'START':<{HEADERSIZE}}", 'utf-8')
+                header = "START"
+                leader_communication(header, network_message, child_conn, client_listen)
+                flag = True
 
-
-        # if not flag:
-        #     replied_bal = (pickle.loads(network_message[HEADERSIZE:])).ballot
-        #     print(colored(f"(message) Leader race. Highest ballot is {replied_bal}. Self ballot is {ballot_num}.Aborting...", 'red'))
-        #     set_to_default()
-        #     child_conn.send("2")
-        #     flag = True
+        else:
+            if not flag:
+                replied_bal = (pickle.loads(network_message[HEADERSIZE:])).ballot
+                print(colored(f"(message) Leader race. Highest ballot is {replied_bal}. Self ballot is {ballot_num}.Aborting...", 'red'))
+                set_to_default()
+                child_conn.send("2")
+                flag = True
 
 def follower_communication(child_conn, arguments):
     global HOSTNAME
@@ -192,6 +196,7 @@ def follower_communication(child_conn, arguments):
     global CLIENTS
     global PORT
     global DEBUG
+    global RETRY
     global replied_bal
 
     PORT = arguments[0]
@@ -199,6 +204,7 @@ def follower_communication(child_conn, arguments):
     CLIENT_ID = arguments[2]
     DEBUG = arguments[3]
     CATCHUP = arguments[4]
+    RETRY = arguments[5]
     
     ballot_num = (0, CLIENT_ID)
     replied_bal = (0,0)
@@ -221,7 +227,7 @@ def follower_communication(child_conn, arguments):
                 bchain_recvd = pickle.loads(bchain_recvd)
                 if len(bchain_recvd) > len(bchain):
                     bchain = bchain_recvd
-        threading.Event().wait(5)
+        threading.Event().wait(3)
         print(colored("(response) All catched-up", 'yellow'))
         catchup_log()
 

@@ -15,6 +15,7 @@ parser.add_argument('--port' , '-p', nargs=1, type=int, required=True, help="Por
 parser.add_argument('--debug', '-d', action='store_true', default=False, help="Set the flag to enable debug statements")
 parser.add_argument('--catchup', '-c', action='store_false', default=True, help="Disable catch-up")
 parser.add_argument('--beertime', '-b', action='store_true', default=False, help="Beer time")
+parser.add_argument('--retry', '-r', action='store_true', default=False, help="Retry transaction in case of leader failure")
 args = parser.parse_args()
 
 # the pid will serve as the client ID/PID
@@ -22,6 +23,7 @@ HOSTNAME    = 'localhost'
 PORT        = (args.port)[0]
 DEBUG       = (args.debug)
 CATCHUP     = (args.catchup)
+RETRY       = (args.retry)
 HEADERSIZE  = 8
 CLIENTS     = [9001,9002,9003]
 CLIENT_ID   = PORT
@@ -147,7 +149,7 @@ if __name__ == '__main__':
     beer_time()
 
     # add arguments here whenever you need to pass to the communication
-    arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG, CATCHUP]
+    arguments = [PORT, CLIENTS, CLIENT_ID, DEBUG, CATCHUP, RETRY]
     network_communication = Process(name="Follower process", target=follower_communication, args=(child_conn, arguments,))
     network_communication.start()
 
