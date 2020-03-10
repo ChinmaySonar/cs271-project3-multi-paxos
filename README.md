@@ -13,3 +13,5 @@ client.py [-h] --port PORT [--debug] [--catchup] [--beertime]
 `--catchup, -c` : Disable catchup if set
 
 `--beertime, -b`: You just gotta try it to figure out
+
+`--retry, -r`   : Retry transaction if leader failed for some reason
