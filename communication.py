@@ -169,8 +169,8 @@ def leader_communication(header, network_message, child_conn, client_listen):
                 clear_saved_log(PORT)
                 network_message = bytes(f"{'START':<{HEADERSIZE}}", 'utf-8')
                 header = "START"
-                leader_communication(header, network_message, child_conn, client_listen)
                 flag = True
+                leader_communication(header, network_message, child_conn, client_listen)
 
         else:
             if not flag:
@@ -309,7 +309,7 @@ def follower_communication(child_conn, arguments):
                     continue
                 else:
                     # replied to higher ballot -- reply no
-                    dprint(DEBUG, "(debugging) Already replied to a higher ballot. Leader race. Sending abort.", 'red')
+                    dprint(DEBUG, f"(debugging) Already replied to a higher ballot {replied_bal}. Leader race. Sending abort.", 'red')
                     msg = bytes(f"{'NO':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(MessageFromat(replied_bal))
                     send_to_client(msg, prop_ballot[1])
                     continue
@@ -338,7 +338,7 @@ def follower_communication(child_conn, arguments):
 
                 else:
                     # replied to higher ballot -- reply no
-                    dprint(DEBUG, "(debugging) Already replied to a higher ballot. Leader race. Sending abort.", 'red')
+                    dprint(DEBUG, f"(debugging) Already replied to a higher ballot {replied_bal}. Leader race. Sending abort.", 'red')
                     msg = bytes(f"{'NO':<{HEADERSIZE}}", 'utf-8') + pickle.dumps(MessageFromat(replied_bal))
                     send_to_client(msg, prop_ballot[1])
                     continue
